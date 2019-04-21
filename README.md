@@ -3,7 +3,7 @@
 The goal of this repo is to generate predictive models for FRC matches.
 See `generate_training_data.py` for a very bare-bones approach to producing input examples. I've achieved about 68% accuracy using a random forest implementation (four-fold cross-validation) using only the team names as inputs.  Note however this uses information from the future to predict past results.  Lots of work to do to add more features (even historical features) and also build towards only predicting forwards in time.
 
-The rest of this README has some details about the swagger API generated from https://www.thebluealliance.com/swagger/api_v3.json  I encountered some unexpected webcast types and made minor modifications to models\webcast.py to handle them.  See https://github.com/swagger-api/swagger-codegen#online-generators for more information on auto-generating client API code.
+The rest of this README has auto-generated details about the swagger API generated from https://www.thebluealliance.com/swagger/api_v3.json  I encountered some unexpected webcast types and made minor modifications to models\webcast.py to handle them.  See https://github.com/swagger-api/swagger-codegen#online-generators for more information on auto-generating client API code.
 
 # swagger-client details
 ## Overview    
