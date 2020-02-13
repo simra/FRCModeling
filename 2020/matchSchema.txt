@@ -1,0 +1,33 @@
+Score_2020: alliance - the alliance name
+Score_2020: initLineRobot1 - Initiation Line exited for robot 1 (Unknown, None, Exited)
+Score_2020: endgameRobot1 - Endgame/shield generator result for robot 1 (Unknown, None, Park, Hang)
+Score_2020: initLineRobot2 - Initiation Line exited for robot 2 (station 2)
+Score_2020: endgameRobot2 - Endgame/shield generator result for robot 2
+Score_2020: initLineRobot3 - Initiation Line exited for robot 3 (station 3)
+Score_2020: endgameRobot3 - Endgame/shield generator result for robot 3
+Score_2020: autoCellsBottom - Quantity of Power Cells scored (int count)
+Score_2020: autoCellsOuter - Quantity of Power Cells scored
+Score_2020: autoCellsInner - Quantity of Power Cells scored
+Score_2020: teleopCellsBottom - Quantity of Power Cells scored
+Score_2020: teleopCellsOuter - Quantity of Power Cells scored
+Score_2020: teleopCellsInner - Quantity of Power Cells scored
+Score_2020: stage1Activated - Whether or not Stage 1 was activated (True, False)
+Score_2020: stage2Activated - Whether or not Stage 2 was activated
+Score_2020: stage3Activated - Whether or not Stage 3 was activated
+Score_2020: stage3TargetColor - Color selected by FMS for control panel in stage 3 (Unknown, Red, Blue, Green, Yellow)
+Score_2020: endgameRungIsLevel - Whether or not the shield generator switch was level at the end of the match (Unknown, NotLevel, IsLevel)
+Score_2020: autoInitLinePoints - Number of points earned for Initiation Line exits
+Score_2020: autoCellPoints - Number of points earned for Power Cells in Autonomous
+Score_2020: autoPoints - Total Number of points earned in Auto period
+Score_2020: teleopCellPoints - Number of points earned for Power Cells in Teleop
+Score_2020: controlPanelPoints - Number of points earned for Control Panel actions
+Score_2020: endgamePoints - Number of points earned for Endgame/Shield Generator actions
+Score_2020: teleopPoints - Total number of points earned during Teleop
+Score_2020: shieldOperationalRankingPoint - Whether or not the Shield Generator Operational Ranking Point was achieved
+Score_2020: shieldEnergizedRankingPoint - Whether or not the Shield Generator Energized Ranking Point was achieved (including via opponent G11)
+Score_2020: foulCount - Quantity of fouls assigned to the alliance
+Score_2020: techFoulCount - Quantity of tech fouls assigned to the alliance
+Score_2020: adjustPoints - Manual adjustment points entered
+Score_2020: foulPoints - Quantity of points earned in Fouls/Tech Fouls committed by the opposite alliance
+Score_2020: rp - Total ranking points earned by the alliance in the Match (0 in Playoffs/Practice)
+Score_2019: totalPoints - Total points earned by the alliance in the Match
