@@ -8,6 +8,13 @@ from pprint import pprint
 import pickle
 import os
 import json
+import argparse
+
+parser = argparse.ArgumentParser(description='Fetch match data from the blue alliance.')
+parser.add_argument('--year', type=int, default=2020, help='Season to fetch')
+parser.add_argument('--reset', help='Force re-fetch of the entire season', action='store_true')
+
+args = parser.parse_args()
 
 # Configure API key authorization: apiKey
 configuration = v3client.Configuration()
@@ -26,11 +33,14 @@ def fetch_all_matches(year, reset=False):
     result = {}
     outfile = 'matches_{}.pkl'.format(year)
     if os.path.exists(outfile):
-        with open(outfile, 'r', encoding='utf-8') as inresult:
-            result=json.load(inresult)
-            if 'Last-Modified' in result and not reset:
-                if_modified_since = result['Last-Modified']
-
+        with open(outfile, 'rb') as inresult:
+            try:
+                result=pickle.load(inresult)
+                if 'headers' in result and 'Last-Modified' in result['headers'] and not reset:
+                    if_modified_since = result['headers']['Last-Modified']
+            except:
+                print('Failed to load prior matches')
+                result = {}
     try:
         events = api_instance.get_events_by_year(2020, if_modified_since=if_modified_since)
         result = {
@@ -49,7 +59,7 @@ def fetch_all_matches(year, reset=False):
         print("Exception when calling EventApi->get_team_events: %s\n" % e)
     
     if 'events' in result:
-        with open(outfile,'w', encoding='utf-8') as outmatches:
+        with open(outfile,'wb') as outmatches:
             pickle.dump(result,outmatches)
 
     return result
@@ -71,6 +81,11 @@ def fetch_matches():
     
     return result
 
+def count_matches(events): 
+    return sum([len(events[e]) for e in events])
+    
 
-matches = fetch_all_matches(2020)
-print(' {} events fetched'.format(len(matches['Events'])))
+if __name__ == "__main__":
+    matches = fetch_all_matches(args.year, reset=args.reset)
+    print('{} events fetched'.format(len(matches['events'])))
+    print('{} matches total'.format(count_matches(matches['matches'])))
