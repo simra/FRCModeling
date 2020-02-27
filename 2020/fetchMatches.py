@@ -42,7 +42,7 @@ def fetch_all_matches(year, reset=False):
                 print('Failed to load prior matches')
                 result = {}
     try:
-        events = api_instance.get_events_by_year(2020, if_modified_since=if_modified_since)
+        events = api_instance.get_events_by_year(year, if_modified_since=if_modified_since)
         result = {
             'headers': api_instance.api_client.last_response.getheaders(), 
             'events': events 

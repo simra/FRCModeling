@@ -122,7 +122,7 @@ class Media(object):
         """
         if type is None:
             raise ValueError("Invalid value for `type`, must not be `None`")  # noqa: E501
-        allowed_values = ["youtube", "cdphotothread", "imgur", "facebook-profile", "youtube-channel", "twitter-profile", "github-profile", "instagram-profile", "periscope-profile", "grabcad", "instagram-image", "external-link", "avatar"]  # noqa: E501
+        allowed_values = ["youtube", "cdphotothread", "imgur", "facebook-profile", "youtube-channel", "twitter-profile", "github-profile", "instagram-profile", "periscope-profile", "grabcad", "instagram-image", "external-link", "avatar", "direct_link"]  # noqa: E501
         if type not in allowed_values:
             raise ValueError(
                 "Invalid value for `type` ({0}), must be one of {1}"  # noqa: E501
