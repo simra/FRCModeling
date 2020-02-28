@@ -83,7 +83,21 @@ def fetch_matches():
 
 def count_matches(events): 
     return sum([len(events[e]) for e in events])
-    
+
+def fetch_teams(year):
+    list_api = v3client.ListApi(v3client.ApiClient(configuration))
+    pg = 0
+    result = []
+    while True:
+        print('page {}'.format(pg))
+        teams = list_api.get_teams_by_year(year, pg)
+        if len(teams)==0:
+            break
+        result+=teams
+        pg+=1
+        
+    with open('teams_{}.pkl'.format(year),'wb') as outTeams:
+        pickle.dump(result,outTeams)
 
 if __name__ == "__main__":
     matches = fetch_all_matches(args.year, reset=args.reset)
