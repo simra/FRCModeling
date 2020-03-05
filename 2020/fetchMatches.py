@@ -13,6 +13,7 @@ import argparse
 parser = argparse.ArgumentParser(description='Fetch match data from the blue alliance.')
 parser.add_argument('--year', type=int, default=2020, help='Season to fetch')
 parser.add_argument('--reset', help='Force re-fetch of the entire season', action='store_true')
+parser.add_argument('--events', help='events to pull', default="")
 
 args = parser.parse_args()
 
@@ -28,9 +29,13 @@ api_instance = v3client.EventApi(v3client.ApiClient(configuration))
 #team_key = 'frc492' # str | TBA Team Key, eg `frc254`
 #if_modified_since = 'if_modified_since_example' # str | Value of the `Last-Modified` header in the most recently cached response by the client. (optional)
 
-def fetch_all_matches(year, reset=False):
+def fetch_all_matches(year, eventsToPull="", reset=False):
     if_modified_since = ''
     result = {}
+    eventsFilter = None
+    if eventsToPull!="":
+        eventsFilter=eventsToPull.split(',')
+
     outfile = 'matches_{}.pkl'.format(year)
     if os.path.exists(outfile):
         with open(outfile, 'rb') as inresult:
@@ -43,6 +48,9 @@ def fetch_all_matches(year, reset=False):
                 result = {}
     try:
         events = api_instance.get_events_by_year(year, if_modified_since=if_modified_since)
+        if eventsFilter is not None:
+            events = [e for e in events if e.key in eventsFilter]
+        
         result = {
             'headers': api_instance.api_client.last_response.getheaders(), 
             'events': events 
@@ -100,6 +108,6 @@ def fetch_teams(year):
         pickle.dump(result,outTeams)
 
 if __name__ == "__main__":
-    matches = fetch_all_matches(args.year, reset=args.reset)
+    matches = fetch_all_matches(args.year, eventsToPull=args.events, reset=args.reset)
     print('{} events fetched'.format(len(matches['events'])))
     print('{} matches total'.format(count_matches(matches['matches'])))
