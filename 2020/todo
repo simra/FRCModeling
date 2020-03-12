@@ -1,4 +1,7 @@
 - dynamically fetch/update stats_2020.tsv
+- fetchEventStatuses should be able to pull all events.
 - control which data is used by event/district.
 - alliance selection
 - scouting reports
+
+- forecasting event winners.

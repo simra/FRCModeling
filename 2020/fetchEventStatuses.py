@@ -35,6 +35,6 @@ if __name__ == "__main__":
         rankout = [(x.team_key, x.rank) for x in rankings.rankings]
         result[e]=dict(rankout)
         
-    with open('rankings_2020.pkl', 'wb') as outRankings:
+    with open('data/rankings_2020.pkl', 'wb') as outRankings:
         pickle.dump(result, outRankings)
 print(result)
