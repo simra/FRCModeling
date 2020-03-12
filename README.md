@@ -5,6 +5,8 @@ See `2019/generate_training_data.py` for a very bare-bones approach to producing
 
 The rest of this README has auto-generated details about the swagger API generated from https://www.thebluealliance.com/swagger/api_v3.json  I encountered some unexpected webcast types and made minor modifications to models\webcast.py to handle them.  See https://github.com/swagger-api/swagger-codegen#online-generators for more information on auto-generating client API code.  Note there's a lot of missing information below.  Start from `2019/generate_training_data.py` for a working example.
 
+For 2020 notebooks see the 2020 folder.
+
 # swagger-client details
 ## Overview    
 
