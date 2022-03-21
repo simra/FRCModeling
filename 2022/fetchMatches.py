@@ -28,8 +28,14 @@ configuration.api_key['X-TBA-Auth-Key'] = 'H5BU1gIXB57bFxNXNGQswd4E59Gs4rLuSooiP
 api_instance = v3client.EventApi(v3client.ApiClient(configuration))
 #team_key = 'frc492' # str | TBA Team Key, eg `frc254`
 #if_modified_since = 'if_modified_since_example' # str | Value of the `Last-Modified` header in the most recently cached response by the client. (optional)
+if_modified_since = ''
 
 def fetch_all_matches(year, eventsToPull="", reset=False):
+    """
+    Fetch all matches associated with a requested year, 
+    filtered to eventsToPull, or all events if it's empty.
+    Set reset=True to force re-fetching everything.
+    """
     if_modified_since = ''
     result = {}
     eventsFilter = None
@@ -50,7 +56,7 @@ def fetch_all_matches(year, eventsToPull="", reset=False):
         events = api_instance.get_events_by_year(year, if_modified_since=if_modified_since)
         if eventsFilter is not None:
             events = [e for e in events if e.key in eventsFilter]
-        
+
         result = {
             'headers': api_instance.api_client.last_response.getheaders(), 
             'events': events 
@@ -72,8 +78,15 @@ def fetch_all_matches(year, eventsToPull="", reset=False):
 
     return result
 
-team_key = 'frc492'
-def fetch_matches():
+def fetch_events(team_key='frc492'):
+    events = api_instance.get_team_events_by_year(team_key, 2022, if_modified_since=if_modified_since)
+    for e in events:
+        print(f'{e.event_code}\t{e.name}\t{e.start_date}')
+
+def fetch_matches(team_key = 'frc492'):
+    """
+    Fetches all matches all events associated with a single team
+    """
     result = []
     try:
         events = api_instance.get_team_events_by_year(team_key, 2022, if_modified_since=if_modified_since)
@@ -93,6 +106,9 @@ def count_matches(events):
     return sum([len(events[e]) for e in events])
 
 def fetch_teams(year):
+    """
+    Fetch the list of all teams for a requested year.
+    """
     list_api = v3client.ListApi(v3client.ApiClient(configuration))
     pg = 0
     result = []
@@ -108,6 +124,7 @@ def fetch_teams(year):
         pickle.dump(result,outTeams)
 
 if __name__ == "__main__":
+    # Current default behavior is to fetch all the matches for a single year.
     matches = fetch_all_matches(args.year, eventsToPull=args.events, reset=args.reset)
     print('{} events fetched'.format(len(matches['events'])))
     print('{} matches total'.format(count_matches(matches['matches'])))
