@@ -17,4 +17,5 @@
 
 ## Server: 
 1. cd 2020
-2. python server.py
+2. npm install chart.js
+3. python server.py
