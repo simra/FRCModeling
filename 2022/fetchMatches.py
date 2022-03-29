@@ -83,6 +83,11 @@ def fetch_events(team_key='frc492'):
     for e in events:
         print(f'{e.event_code}\t{e.name}\t{e.start_date}')
 
+
+def fetch_event_rankings(event_key = '2022wasno'):
+    rankings = api_instance.get_event_rankings(event_key)
+    return rankings
+
 def fetch_matches(team_key = 'frc492'):
     """
     Fetches all matches all events associated with a single team
