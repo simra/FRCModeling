@@ -15,8 +15,6 @@ parser.add_argument('--year', type=int, default=2022, help='Season to fetch')
 parser.add_argument('--reset', help='Force re-fetch of the entire season', action='store_true')
 parser.add_argument('--events', help='events to pull', default="")
 
-args = parser.parse_args()
-
 # Configure API key authorization: apiKey
 configuration = v3client.Configuration()
 configuration.api_key['X-TBA-Auth-Key'] = 'H5BU1gIXB57bFxNXNGQswd4E59Gs4rLuSooiPWYuu0c0zh8tBVuLQrwBJepUgXUQ'
@@ -67,7 +65,7 @@ def fetch_all_matches(year, eventsToPull="", reset=False):
             print('Fetching event {}'.format(e.key))
             matches = api_instance.get_event_matches(e.key, if_modified_since=if_modified_since)
             result['matches'][e.key]=matches
-            print(matches)
+            # print(matches)
         
     except ApiException as e:
         print("Exception when calling EventApi->get_team_events: %s\n" % e)
@@ -129,6 +127,9 @@ def fetch_teams(year):
         pickle.dump(result,outTeams)
 
 if __name__ == "__main__":
+    
+    args = parser.parse_args()
+
     # Current default behavior is to fetch all the matches for a single year.
     matches = fetch_all_matches(args.year, eventsToPull=args.events, reset=args.reset)
     print('{} events fetched'.format(len(matches['events'])))
