@@ -7,14 +7,14 @@
 
     You can optionally pass --reset to re-pull all the data, and --year YEAR to pull data for a year other than 2023.  
 
-2. MoreFeatures.ipynb is the main ML notebook, useful for exploring the data and training a machine learning model.  It is now updated for 2023.
+2. 00MachineLearning.ipynb is the main ML notebook, useful for exploring the data and training a machine learning model.  It is now updated for 2023.
 
     `jupyter notebook`
 
-    This will launch the notebook browser. Open MoreFeatures.ipynb and run the notebook to rebuild the model.
+    This will launch the notebook browser. Open 00MachineLearning.ipynb and run the notebook to rebuild the model.
 
 
-3. Rankings.ipynb is a notebook for ranking alliance partners. This will be our main notebook once the ML model is ready. This isn't updated for 2023 yet.
+3. 01Ranking.ipynb is a notebook for ranking alliance partners. This will be our main notebook once the ML model is ready. 
 
 
 
