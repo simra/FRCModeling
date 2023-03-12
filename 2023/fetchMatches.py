@@ -56,9 +56,9 @@ def fetch_all_matches(year, eventsToPull="", reset=False):
             events = [e for e in events if e.key in eventsFilter]
 
         result = {
-            'headers': api_instance.api_client.last_response.getheaders(), 
-            'events': events 
-            }
+            'headers': api_instance.api_client.last_response.getheaders(),
+            'events': events
+        }
         if 'matches' not in result:
             result['matches']= {}
         for e in events:
