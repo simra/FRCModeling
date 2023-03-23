@@ -60,12 +60,15 @@ def fetch_all_matches(year, eventsToPull="", reset=False):
             'events': events
         }
         if 'matches' not in result:
-            result['matches']= {}
+            result['matches'] = {}
+            result['event_teams'] = {}
         for e in events:
             print('Fetching event {}'.format(e.key))
             matches = api_instance.get_event_matches(e.key, if_modified_since=if_modified_since)
             result['matches'][e.key]=matches
             # print(matches)
+            teams = api_instance.get_event_teams(e.key, if_modified_since=if_modified_since)
+            result['event_teams'][e.key]=teams
         
     except ApiException as e:
         print("Exception when calling EventApi->get_team_events: %s\n" % e)
