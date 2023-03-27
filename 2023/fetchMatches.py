@@ -74,6 +74,9 @@ def fetch_all_matches(year, eventsToPull="", reset=False):
         print("Exception when calling EventApi->get_team_events: %s\n" % e)
     
     if 'events' in result:
+        if os.path.exists(outfile):
+            # make a backup copy, overwrite if it already exists            
+            os.replace(outfile, outfile+'.bak')
         with open(outfile,'wb') as outmatches:
             pickle.dump(result,outmatches)
 
