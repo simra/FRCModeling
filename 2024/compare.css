@@ -1,0 +1,46 @@
+* {
+    box-sizing: border-box;
+  }
+
+table {
+    font-size: small;
+}
+
+.svg-container {
+    /*position: relative; */
+    float: left;
+    height:80vh;  
+    width:60%; /*90vw;*/
+    /*height: 400px;
+    width: 400px;*/
+}
+
+#leftcolumn {
+    float:left;
+    width: 20%;
+    border: solid 2px;
+    overflow-x: auto;
+    font: small sans-serif;
+    
+}
+
+#rightcolumn {
+
+    float:right;
+    width: 20%;
+    border: solid 2px;
+    overflow-x: auto;
+    font: small sans-serif;
+
+}
+
+#leftcolumn h3 {
+    margin: 5px;
+}
+#rightcolumn h3 {
+    margin: 5px;
+}
+
+.select {
+    padding:5px;
+}
