@@ -1,0 +1,36 @@
+td {
+    border: 1px solid black;
+    min-width: 100px;
+    min-height: 50px;
+    text-align: center;
+  }
+
+div {
+    min-height: 20px;
+}
+
+#teams {
+    width: 20%;
+    min-width: 200px;
+}
+
+#brackets_container {
+    width: 33%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+
+table {
+    padding: 16px;
+}
+
+li {
+    border: solid 1px gray;
+    list-style-type: none;
+    margin: 2px;
+    padding: 2px;
+    display: inline-block;
+}
