@@ -6,6 +6,7 @@ import { Team } from '../types/TeamTypes';
 import { Alliance } from '../types/Alliance';
 import AllianceRender from './AllianceRender';
 import StrictModeDroppable from './StrictModeDroppable';
+import GaussianPlot from './GaussianPlot';
 
 function AllianceComponent() {
   const [district, setDistrict] = useState('');
@@ -13,6 +14,11 @@ function AllianceComponent() {
   const [match_type, setMatchType] = useState('');
   const [density, setDensity] = useState<{[key: number]: {[key: string]: number} }>({});
   const [overall, setOverall] = useState<{[key: string]: number}>({});
+  const [alliance1, setAlliance1] = useState('');
+  const [alliance2, setAlliance2] = useState('');
+  const [spread, setSpread] = useState<number|null>(null);
+  const [sigma, setSigma] = useState<number|null>(null);
+  const [pRed, setPRed] = useState<number|null>(null);
 
   const [leftTeams, setLeftTeams] = useState<Team[]>(
     () => {const savedTeams = localStorage.getItem('teams');
@@ -64,6 +70,26 @@ function AllianceComponent() {
       setOverall(data['overall']);
     });
 
+  }
+
+  const predictMatch = () => {
+    var a1 = Number(alliance1[1])-1;
+    var a2 = Number(alliance2[1])-1;
+    var red = slots[a1].map(slot => slot.team ? slot.team.team : '').join(',');
+    var blue = slots[a2].map(slot => slot.team ? slot.team.team : '').join(','); 
+
+    // POST alliances to /model/district_model_event_match_type/bracket
+    let baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+    // /model/<model_key>/predict/<red>/<blue>
+    let url = `${baseUrl}/model/${district}_${model_event}_${match_type}/predict/${red}/${blue}`;
+    // POST the alliances to the url using fetch:
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        setSpread(data['spread']);
+        setSigma(data['sigma']);
+        setPRed(data['pRed']);        
+      });
   }
 
   const handleDragEnd = (result: any) => {
@@ -149,11 +175,16 @@ function AllianceComponent() {
           <button onClick={updateBrackets}>Run Brackets</button>
         </div>
         <div className='bracket-list'>
-                {density && Object.keys(density).map((match)=> {
-                  let outcome = density[Number(match)];
-                  return (
-                    <div>M{match}: {Object.keys(outcome).map((key) => ` ${key}: ${outcome[key]/10}` )}
-                  </div>)})}
+                <h2>Single Match</h2>
+                <input type="text" value={alliance1} onChange={e => setAlliance1(e.target.value) } className="input-field"></input>
+                <input type="text" value={alliance2} onChange={e => setAlliance2(e.target.value) } className="input-field"></input>
+                <button onClick={predictMatch}>Run Match</button>
+                <hr></hr>
+                {spread && <div>Spread: {spread.toFixed(2)}</div>}
+                {sigma && <div>Sigma: {sigma.toFixed(2)}</div>}
+                {pRed && <div>Prob Red: {pRed.toFixed(2)}</div>}                
+                {spread && sigma && <GaussianPlot mean={spread} sigma={sigma} />}
+
         </div>
         </div>
     </DragDropContext>
@@ -161,3 +192,11 @@ function AllianceComponent() {
 }
 
 export default AllianceComponent;
+
+/* 
+ {density && Object.keys(density).map((match)=> {
+                  let outcome = density[Number(match)];
+                  return (
+                    <div>M{match}: {Object.keys(outcome).map((key) => ` ${key}: ${outcome[key]/10}` )}
+                  </div>)})}
+                  */
