@@ -10,6 +10,7 @@ from collections import Counter
 import numpy as np
 from tqdm import tqdm
 from flask_cors import CORS
+import scipy.stats as stats 
 
 # TODO:
 # Periodic match refresh
@@ -117,7 +118,8 @@ def get_prediction(model_key, red,blue):
     blue = blue.split(',')
     opr = get_model(model_key)
     (spread, sigma) = opr.predict(red,blue)
-    return jsonify({'red': red, 'blue': blue, 'spread':spread, 'sigma':sigma})
+    pRed = 1.0-stats.norm.cdf(0, loc=spread, scale=sigma)
+    return jsonify({'red': red, 'blue': blue, 'spread':spread, 'sigma':sigma, 'pRed':pRed})
 
 @app.route('/model/<model_key>/teams')
 def get_teams(model_key):
@@ -231,7 +233,7 @@ def run_bracket(model_key):
         alliances[f'L{matchNumber}'] = loser
         #print(f'{winner} beats {loser} by {abs(r)} in match {matchNumber}')
 
-        
+      
     def pMatch(matchNumber):
         red_id,blue_id = bracket[matchNumber]
         
@@ -245,7 +247,7 @@ def run_bracket(model_key):
         # mu and sigma are the expected advantage for red
         return opr.predict(red,blue)
 
-    import scipy.stats as stats
+    
 
     def pRed(matchNumber):
         mu,sigma = pMatch(matchNumber)

@@ -13,7 +13,7 @@ function GaussianPlot({ mean, sigma } : { mean: number, sigma: number}) {
     labels: x,
     datasets: [
       {
-        label: 'Prob Red Advantage',
+        label: 'Red Advantage',
         data: y,
         fill: true,
         backgroundColor: 'rgba(255, 0, 0, 0.2)',
@@ -29,7 +29,7 @@ function GaussianPlot({ mean, sigma } : { mean: number, sigma: number}) {
             callback: function(this: Scale, tickValue: number | string, index: number, ticks: Tick[]) : string {
               console.log(tickValue, index, ticks[index], this.getLabelForValue(tickValue as number));
               //return this.getLabelForValue(value).toFixed(0); //  return (value as number).toFixed(0);
-              return Number.parseInt(this.getLabelForValue(tickValue as number)).toFixed(2);
+              return Number.parseInt(this.getLabelForValue(tickValue as number)).toFixed(0);
             }
           }
       }
