@@ -1,46 +1,54 @@
+from collections import Counter
 import logging
 import pickle
 import os
-import sys
-from flask import Flask, jsonify, request, render_template
-sys.path.append('../')
-sys.path.append('../../')
-from OPR import OPR
-from collections import Counter
+from time import strftime, gmtime
+from dotenv import load_dotenv
 import numpy as np
 from tqdm import tqdm
 from flask_cors import CORS
 import scipy.stats as stats 
-import subprocess
-from time import strftime, gmtime
-import json
-from fetchMatches import fetch_event_teams
+from OPR import OPR
+from TBA import TBA
+from flask import Flask, jsonify, request, render_template, send_from_directory
+
 
 # TODO:
 # Periodic match refresh
 # Other model types
-# infer team list for future events. Currently we can only process past/running events.
+# model selection for brackets
 # Overall OPR rankings page
-
 # Fix the best 2 of 3 bracket?
-# button to clear alliances
 # button to auto-populate alliances
 # dropdown for event selection
 # improved layout
+# enable arbitrary district selection, all district selection
 
 # model/match data somewhere that doesn't trigger reload.
-
+load_dotenv()
 logging.basicConfig(level=logging.DEBUG)
-app = Flask(__name__)
-CORS(app)
 
-@app.route('/')
-def home():
-    return render_template('index.html')
+DATA_FOLDER = os.getenv('DATA_FOLDER', '../')
+logging.info('Using data folder: %s', DATA_FOLDER)
+if not os.path.exists(DATA_FOLDER):
+    os.makedirs(DATA_FOLDER)
 
 models = {}
-all_matches = None
+tba = TBA(year=2024, district='pnw')
+all_matches = tba.matches
 
+app = Flask(__name__, static_folder='static/build')
+CORS(app)
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    logging.info('Serving %s', path)
+    if path != "" and os.path.exists(app.static_folder + '/' + path):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
+    
 def create_model(district, event, match_type, force_recompute=False):
     '''
     district: string, the district to filter by. eg 'pnw', 'all' for all districts
@@ -48,17 +56,17 @@ def create_model(district, event, match_type, force_recompute=False):
     match_type: string, the match type to filter by. eg. 'qm', 'all' for all match types
     force_recompute: bool, if True, recompute the model even if it already exists
     '''
-    global all_matches
 
     model_key=f'{district}_{event}_{match_type}'
-    model_fn = f'model_{model_key}.pkl'
-    
-    if all_matches is None:
-        filename = '../matches_2024.pkl'        
-        with open(filename, 'rb') as f:
-            all_matches = pickle.load(f)
-            # stat the matches file to get its last modified time and set it on all_matches
-            all_matches['last_modified'] = os.stat(filename).st_mtime
+    model_fn = f'{DATA_FOLDER}/model_{model_key}.pkl'
+            
+
+    #if all_matches is None:
+    #    filename = f'{DATA_FOLDER}/matches_2024.pkl'        
+    #    with open(filename, 'rb') as f:
+    #        all_matches = pickle.load(f)
+    #        # stat the matches file to get its last modified time and set it on all_matches
+    #        all_matches['last_modified'] = os.stat(filename).st_mtime
     
     if not os.path.exists(model_fn) or force_recompute or all_matches['last_modified'] > os.stat(model_fn).st_mtime:
         selected_district = [m.key for m in all_matches['events']] if district == 'all' else \
@@ -121,12 +129,13 @@ def refresh_model(model_key):
     model_key: string, the key for the model to refresh
     returns: a json object with the model info
     '''
-    # TODO: https://stackoverflow.com/questions/14384739/how-can-i-add-a-background-thread-to-flask
-    all_matches = None
-    models[model_key] = None
-    subprocess.Popen(["python", "fetchMatches.py", "--year", "2024"], cwd='../')
-
-    return jsonify({'status': 'refreshing'})
+    global all_matches
+    global models
+    # TODO this must run async: https://stackoverflow.com/questions/14384739/how-can-i-add-a-background-thread-to-flask
+    TBA.fetch_all_matches(2024, 'pnw')
+    all_matches = TBA.matches
+    models = {}
+    return jsonify({'all_matches': len(all_matches['matches'])})
 
 # pass in the team id and get back the stats for that team.
 @app.route('/model/<model_key>/team/<team_id>')
@@ -174,7 +183,7 @@ def get_event_teams(model_key, event_key):
     logging.info('Getting teams for model %s event %s', model_key, event_key)
     opr = get_model(model_key)    
         
-    teams = fetch_event_teams(event_key)
+    teams = tba.fetch_event_teams(event_key)
     
     EMPTY_OPR = {'opr': {'mu': 0, 'sigma': 0}, 'dpr': {'mu': 0, 'sigma': 0}, 'tpr': {'mu': 0, 'sigma': 0}}   
 
@@ -191,11 +200,12 @@ def get_event_teams(model_key, event_key):
     return jsonify(result)
 
 
-@app.route('/model/<model_key>/bracket', methods=['POST'])
-def run_bracket(model_key):
+@app.route('/model/<model_key>/bracket/<model_method>', methods=['POST'])
+def run_bracket(model_key, model_method):
     '''
     POST method to run a playoff bracket
     model_key: string, the key for the model to use
+    model_method: one of opr, tpr, dpr
     post body: json object containing the set of alliances, of the format:
     {'A1': [team1, team2, team3], 'A2': [...], ..., 'A8': [...]}
     returns: a json object with the predicted spread 
@@ -245,9 +255,8 @@ def run_bracket(model_key):
         #density[matchNumber][blue_id]+=1
         
         # mu and sigma are the expected advantage for red
-        mu,sigma = opr.predict(red,blue)
+        mu,sigma = opr.predict(red,blue, method=model_method)
         r = np.random.normal(mu, sigma)
-        #print(red,blue,mu,sigma,r)
         
         if r>0:        
             winner = red
@@ -257,7 +266,6 @@ def run_bracket(model_key):
             loser = red
         alliances[f'W{matchNumber}'] = winner
         alliances[f'L{matchNumber}'] = loser
-        #print(f'{winner} beats {loser} by {abs(r)} in match {matchNumber}')
 
       
     def pMatch(matchNumber):

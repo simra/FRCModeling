@@ -4,7 +4,7 @@ import * as math from 'mathjs';
 import {CategoryScale, Tick} from 'chart.js';
 
 function GaussianPlot({ mean, sigma } : { mean: number, sigma: number}) {
-    //Chart.register(CategoryScale);
+    ChartJS.register(CategoryScale);
 
     const x = math.range(math.round(mean-3*sigma), math.round(mean+3*sigma), 0.1).toArray() as number[];
   const y = x.map((val:number) => (1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((val - mean) / sigma, 2) ));
@@ -45,7 +45,6 @@ function GaussianPlot({ mean, sigma } : { mean: number, sigma: number}) {
       }
     }
   };
-  console.log(defaults);
   return <Line data={data} options={options}/>;
 }
 

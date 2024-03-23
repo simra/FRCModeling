@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DroppableProvided, DraggableProvided, DroppableProps, DropResult, DroppableStateSnapshot } from 'react-beautiful-dnd';
 import { scaleLinear } from 'd3-scale';
+import Select from 'react-select';
 import EventForm from './EventForm';
 import { Team } from '../types/TeamTypes';
-import { Alliance } from '../types/Alliance';
-import AllianceRender from './AllianceRender';
 import StrictModeDroppable from './StrictModeDroppable';
 import GaussianPlot from './GaussianPlot';
 
 function AllianceComponent() {
-  const [district, setDistrict] = useState('');
-  const [model_event, setModelEvent] = useState('');
-  const [match_type, setMatchType] = useState('');
+  const [district, setDistrict] = useState(localStorage.getItem('district') || '');
+  const [modelEvent, setModelEvent] = useState(localStorage.getItem('modelEvent') || '');
+  const [matchType, setMatchType] = useState(localStorage.getItem('matchType') || '');  
   const [density, setDensity] = useState<{[key: number]: {[key: string]: number} }>({});
   const [overall, setOverall] = useState<{[key: string]: number}>({});
   const [alliance1, setAlliance1] = useState('');
   const [alliance2, setAlliance2] = useState('');
-  const [model_method, setModelMethod] = useState('opr');
+  const [modelMethod, setModelMethod] = useState('opr');
+  const [bracketMethod, setBracketMethod] = useState('opr');
   const [spread, setSpread] = useState<number|null>(null);
   const [sigma, setSigma] = useState<number|null>(null);
   const [pRed, setPRed] = useState<number|null>(null);
@@ -34,12 +34,12 @@ function AllianceComponent() {
 
   useEffect(() => {
     localStorage.setItem('teams', JSON.stringify(leftTeams));
-  }, [leftTeams]);
+    localStorage.setItem('district', district);
+        localStorage.setItem('modelEvent', modelEvent);
+        localStorage.setItem('matchType', matchType);
+        localStorage.setItem('slots', JSON.stringify(slots));
+      }, [leftTeams, district, modelEvent, matchType, slots]);
   
-  useEffect(() => {
-    localStorage.setItem('slots', JSON.stringify(slots));
-  }, [slots]);
-
   const handleTeamsUpdate = (district: string, model_event: string, match_type: string, teams: Team[]) => {
     setLeftTeams(teams);
     setDistrict(district);
@@ -47,8 +47,15 @@ function AllianceComponent() {
     setMatchType(match_type);
   };
 
+  const handlePropUpdate = (district: string, model_event: string, match_type: string) => {
+    setDistrict(district);
+    setModelEvent(model_event);
+    setMatchType(match_type);
+  }
+
   const clearBrackets = () => {
     setSlots(Array.from({ length: 8 }, () => [{ team: null }, { team: null }, { team: null }]));
+    setOverall({});
   }
 
   const updateBrackets = () => {
@@ -60,7 +67,7 @@ function AllianceComponent() {
     console.log(payload);
     // POST alliances to /model/district_model_event_match_type/bracket
     let baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
-    let url = `${baseUrl}/model/${district}_${model_event}_${match_type}/bracket`;
+    let url = `${baseUrl}/model/${district}_${modelEvent}_${matchType}/bracket/${bracketMethod}`;
     // POST the alliances to the url using fetch:
     fetch(url, {
       method: 'POST',
@@ -86,7 +93,7 @@ function AllianceComponent() {
     // POST alliances to /model/district_model_event_match_type/bracket
     let baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
     // /model/<model_key>/predict/<red>/<blue>
-    let url = `${baseUrl}/model/${district}_${model_event}_${match_type}/predict/${red}/${blue}/${model_method}`;
+    let url = `${baseUrl}/model/${district}_${modelEvent}_${matchType}/predict/${red}/${blue}/${modelMethod}`;
     // POST the alliances to the url using fetch:
     fetch(url)
       .then(response => response.json())
@@ -112,7 +119,10 @@ function AllianceComponent() {
       const destinationSlot = slots[row][col];
       if (destinationSlot.team) {
         // If it does, remove that team from the slots and add it back to the leftTeams array
-        newTeams = [...newTeams, destinationSlot.team as Team];
+        let existingTeams = newTeams.map(team => team.team);
+        if (!existingTeams.includes(destinationSlot.team.team)) {
+          newTeams = [...newTeams, destinationSlot.team as Team];
+        }        
       }
       setLeftTeams(newTeams);
       setSlots(slots.map((alliance, index) => (index === row) ? 
@@ -125,9 +135,20 @@ function AllianceComponent() {
     return `OPR: ${team.stats.opr.mu.toFixed(2)}\nDPR: ${team.stats.dpr.mu.toFixed(2)}\nTPR: ${team.stats.tpr.mu.toFixed(2)}`;
   }
 
+  const modeloptions = [
+    { label: "OPR", value: "opr" },
+    { label: "DPR", value: "dpr" },
+    { label: "TPR", value: "tpr" }
+  ];
+
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <EventForm onTeamsUpdate={handleTeamsUpdate} />
+      <EventForm 
+        district={district} 
+        modelEvent={modelEvent} 
+        matchType={matchType}
+        onTeamsUpdate={handleTeamsUpdate} 
+        onPropUpdate={handlePropUpdate}  />
       <div className='alliance-component'>
         <StrictModeDroppable droppableId="left">
           {(provided: DroppableProvided) => (
@@ -137,8 +158,8 @@ function AllianceComponent() {
                   (() => {
                     let colorScale = scaleLinear<string>()
                       .domain([Math.min(...leftTeams.map(team => team.stats.opr.mu)), Math.max(...leftTeams.map(team => team.stats.opr.mu))])
-                      .range(['lightgreen', 'red']);                   
-                    return leftTeams.sort((a, b) => b.stats.tpr.mu - a.stats.tpr.mu).map((team, index) => { 
+                      .range(['lightgreen', 'red']);          
+                    return leftTeams.sort((a, b) => b.stats.tpr.mu - a.stats.tpr.mu).map((team, index) => {                       
                       let calcBackgroundColor = colorScale(team.stats.opr.mu)
                       
                       return (
@@ -186,18 +207,21 @@ function AllianceComponent() {
           ))}
           <div className='overall-value'>{overall && ('A'+id) in overall ? overall['A'+id]/10 : ''}</div>
           </div>))}
+          <div className='form-group-bracket'>
+          <label>Method:</label><Select options={modeloptions} onChange={(e) => setBracketMethod(e?.value || '')} className='input-field'></Select>
+          </div>
           <button onClick={updateBrackets}>Run Brackets</button> <button onClick={clearBrackets}>Clear Brackets</button>
         </div>
         <div className='bracket-list'>
                 <h2>Single Match</h2>
                 <div className='form-group'>
-                  <label>Red: </label><input type="text" value={alliance1} onChange={e => setAlliance1(e.target.value) } className="input-field"></input>
+                  <label>Red:</label><input type="text" value={alliance1} onChange={e => setAlliance1(e.target.value) } className="input-field"></input>
                 </div>
                 <div className='form-group'>
-                  <label> Blue: </label><input type="text" value={alliance2} onChange={e => setAlliance2(e.target.value) } className="input-field"></input>
+                  <label> Blue:</label><input type="text" value={alliance2} onChange={e => setAlliance2(e.target.value) } className="input-field"></input>
                 </div>
                 <div className='form-group'>                  
-                  <label>Method (opr,dpr,tpr): </label><input type="text" value={model_method} onChange={e => setModelMethod(e.target.value) } className="input-field"></input>
+                  <label>Method:</label><Select options={modeloptions} onChange={(e) => setModelMethod(e?.value || '')} className='input-field'></Select>
                 </div>
                 <button onClick={predictMatch}>Run Match</button>
                 <hr></hr>

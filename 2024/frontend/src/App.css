@@ -49,6 +49,17 @@
   margin-bottom: 5px;
 }
 
+
+.form-group-bracket {
+  display: flex;
+  margin-left: 50px;
+  width: 50%;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+
 .input-field {
   /*height: 25px;*/
   vertical-align: middle;
