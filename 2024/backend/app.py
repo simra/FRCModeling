@@ -11,18 +11,23 @@ import numpy as np
 from tqdm import tqdm
 from flask_cors import CORS
 import scipy.stats as stats 
+import subprocess
+from time import strftime, gmtime
+import json
+from fetchMatches import fetch_event_teams
 
 # TODO:
 # Periodic match refresh
 # Other model types
+# infer team list for future events. Currently we can only process past/running events.
 # Overall OPR rankings page
+
 # Fix the best 2 of 3 bracket?
 # button to clear alliances
 # button to auto-populate alliances
 # dropdown for event selection
 # improved layout
-# single-match prediction
-# better bracket visualization
+
 # model/match data somewhere that doesn't trigger reload.
 
 logging.basicConfig(level=logging.DEBUG)
@@ -52,8 +57,10 @@ def create_model(district, event, match_type, force_recompute=False):
         filename = '../matches_2024.pkl'        
         with open(filename, 'rb') as f:
             all_matches = pickle.load(f)
+            # stat the matches file to get its last modified time and set it on all_matches
+            all_matches['last_modified'] = os.stat(filename).st_mtime
     
-    if not os.path.exists(model_fn) or force_recompute:
+    if not os.path.exists(model_fn) or force_recompute or all_matches['last_modified'] > os.stat(model_fn).st_mtime:
         selected_district = [m.key for m in all_matches['events']] if district == 'all' else \
             [m.key for m in all_matches['events'] if m.district and m.district.abbreviation==district]
         
@@ -81,6 +88,7 @@ def create_model(district, event, match_type, force_recompute=False):
         logging.debug('Teams: %s', len(teams))
         
         opr = OPR(selected_matches, teams)
+        opr.data_timestamp = all_matches['last_modified']
         logging.debug('Saving %s', model_fn)
         with open(model_fn, 'wb') as f:
             pickle.dump(opr, f)
@@ -95,6 +103,31 @@ def get_model(model_key):
     assert model_key in models
     return models[model_key]
 
+@app.route('/model/<model_key>')
+def get_model_info(model_key):
+    '''
+    model_key: string, the key for the model to get info for
+    returns: a json object with the model info
+    '''
+    opr = get_model(model_key)
+    (district, events, match_type) = model_key.split('_')
+    timestamp = strftime('%Y-%m-%d %H:%M:%S', gmtime(opr.data_timestamp))
+    return jsonify({
+        'district': district, 'event': events, 'match_type': match_type, 'teams': len(opr.opr_lookup), 'last_modified': timestamp})
+
+@app.route('/model/<model_key>/refresh')
+def refresh_model(model_key):
+    '''
+    model_key: string, the key for the model to refresh
+    returns: a json object with the model info
+    '''
+    # TODO: https://stackoverflow.com/questions/14384739/how-can-i-add-a-background-thread-to-flask
+    all_matches = None
+    models[model_key] = None
+    subprocess.Popen(["python", "fetchMatches.py", "--year", "2024"], cwd='../')
+
+    return jsonify({'status': 'refreshing'})
+
 # pass in the team id and get back the stats for that team.
 @app.route('/model/<model_key>/team/<team_id>')
 def get_opr(model_key, team_id):
@@ -105,19 +138,20 @@ def get_opr(model_key, team_id):
     opr=get_model(model_key)
     return jsonify({f"{team_id}": opr.opr_lookup[team_id]})
 
-@app.route('/model/<model_key>/predict/<red>/<blue>')
-def get_prediction(model_key, red,blue):
+@app.route('/model/<model_key>/predict/<red>/<blue>/<method>')
+def get_prediction(model_key, red,blue, method):
     '''
     model_key: string, the key for the model to use
     red: string, a comma separated list of red teams
     blue: string, a comma separated list of blue teams
+    method: opr, dpr, or tpr
     returns: a json object with the predicted spread 
         and standard deviation in favor of the red alliance    
     '''
     red = red.split(',')
     blue = blue.split(',')
     opr = get_model(model_key)
-    (spread, sigma) = opr.predict(red,blue)
+    (spread, sigma) = opr.predict(red,blue, method=method)
     pRed = 1.0-stats.norm.cdf(0, loc=spread, scale=sigma)
     return jsonify({'red': red, 'blue': blue, 'spread':spread, 'sigma':sigma, 'pRed':pRed})
 
@@ -138,28 +172,20 @@ def get_event_teams(model_key, event_key):
     returns: a json object with the list of teams in the event
     '''
     logging.info('Getting teams for model %s event %s', model_key, event_key)
-    opr = get_model(model_key)
-    teams = set()
-    data = [m for k in all_matches['matches'] for m in all_matches['matches'][k]]
-    data = [m for m in data if m.winning_alliance!='' and m.score_breakdown is not None]
-    def in_scope(m):
-        return m.event_key == event_key
-
-    selected_matches = list(filter(in_scope, data))
-
-    teams = set()
-    for m in selected_matches:
-        for t in m.alliances.red.team_keys:
-            teams.add(t)
-        for t in m.alliances.blue.team_keys:
-            teams.add(t)
+    opr = get_model(model_key)    
+        
+    teams = fetch_event_teams(event_key)
     
+    EMPTY_OPR = {'opr': {'mu': 0, 'sigma': 0}, 'dpr': {'mu': 0, 'sigma': 0}, 'tpr': {'mu': 0, 'sigma': 0}}   
+
     result = [
         {
-            'team': t,
-            'stats': opr.opr_lookup[t]
+            'team': t.key,
+            'nickname': t.nickname,
+            'number': t.team_number,
+            'stats': opr.opr_lookup[t.key] if t.key in opr.opr_lookup else EMPTY_OPR
         }
-        for t in teams if t in opr.opr_lookup
+        for t in teams
     ]
 
     return jsonify(result)

@@ -13,7 +13,7 @@ function App() {
       </header>
       <main>
       <AllianceComponent />
-      </main>
+      </main>      
     </div>
   );
 }

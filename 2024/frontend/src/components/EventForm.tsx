@@ -7,6 +7,7 @@ function EventForm({ onTeamsUpdate }: { onTeamsUpdate: (district: string, model_
   const [modelEvent, setModelEvent] = useState(localStorage.getItem('modelEvent') || '');
   const [matchType, setMatchType] = useState(localStorage.getItem('matchType') || '');
   const [predictionEvent, setPredictionEvent] = useState(localStorage.getItem('predictionEvent') || '');
+  const [modelTimestamp, setModelTimestamp] = useState(localStorage.getItem('modelTimestamp') || '');
   //const [teams, setTeams] = useState<Team[]>([]);
 
     useEffect(() => {
@@ -26,6 +27,12 @@ function EventForm({ onTeamsUpdate }: { onTeamsUpdate: (district: string, model_
       .then(response => response.json())
       .then(data => {
         onTeamsUpdate(district, modelEvent, matchType, data);
+      });
+    let ts_url = `${baseUrl}/model/${district}_${modelEvent}_${matchType}`;
+    fetch(ts_url)
+      .then(response => response.json())
+      .then(data => {
+        setModelTimestamp(data['last_modified']);
       });
   };
 
@@ -56,6 +63,7 @@ function EventForm({ onTeamsUpdate }: { onTeamsUpdate: (district: string, model_
      
       </div>
       <button type="submit">Submit</button>
+      <div><i>Last model update: {modelTimestamp ? modelTimestamp : ""}</i></div>
     </form>
   );
 }

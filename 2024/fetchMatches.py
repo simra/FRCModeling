@@ -92,6 +92,10 @@ def fetch_event_rankings(event_key = '2022wasno'):
     rankings = api_instance.get_event_rankings(event_key)
     return rankings
 
+def fetch_event_teams(event_key = '2024wasam'):
+    return api_instance.get_event_teams(event_key)
+
+
 def fetch_matches(team_key = 'frc492'):
     """
     Fetches all matches all events associated with a single team

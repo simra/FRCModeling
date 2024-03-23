@@ -20,7 +20,7 @@ function AllianceRender({alliance}: AllianceProps) {
                         <StrictModeDroppable droppableId={"alliance" + alliance.id + "-team" + index}>
                             {(provided: DroppableProvided) => (
                                 <div ref={provided.innerRef} {...provided.droppableProps} className="alliance-team">
-                                    {team.team}
+                                    {team.number+' '+team.nickname}
                                     {provided.placeholder}
                                 </div>
                             )}

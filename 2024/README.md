@@ -1,30 +1,18 @@
-# Rapid React Modeling
+# FRC Modeling
 
 ## Steps:
-1. `python fetchMatches.py --year 2023 --reset`
+1. `python fetchMatches.py --year 2024 --reset`
 
-    This will pull all the data for 2023.
+    This will pull all the data for 2024.
 
-    You can optionally pass --reset to re-pull all the data, and --year YEAR to pull data for a year other than 2023.  
+    You can optionally pass --reset to re-pull all the data, and --year YEAR to pull data for a year other than 2024.  
 
-2. 00MachineLearning.ipynb is the main ML notebook, useful for exploring the data and training a machine learning model.  It is now updated for 2023.
+2. `runScoutingReport.py`
 
-    `jupyter notebook`
-
-    This will launch the notebook browser. Open 00MachineLearning.ipynb and run the notebook to rebuild the model.
-
-
-3. 01Ranking.ipynb is a notebook for ranking alliance partners. This will be our main notebook once the ML model is ready. 
+3. Web page: 
+    - backend\  - python flask app
+    - frontend\ - react front-end
 
 
+4. Model generation is in OPR.py.  See runScoutingReport for an example of how it's used.
 
-4. This has not been updated for 2023: 
-
-    `python fetchEventStatuses.py --events [event names comma-separated]`
-    
-    Fetches event rankings to include in stats_2023.tsv
-
-## Server: 
-Not yet updated:
-1. cd 2023
-2. python server.py

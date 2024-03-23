@@ -16,6 +16,7 @@ function AllianceComponent() {
   const [overall, setOverall] = useState<{[key: string]: number}>({});
   const [alliance1, setAlliance1] = useState('');
   const [alliance2, setAlliance2] = useState('');
+  const [model_method, setModelMethod] = useState('opr');
   const [spread, setSpread] = useState<number|null>(null);
   const [sigma, setSigma] = useState<number|null>(null);
   const [pRed, setPRed] = useState<number|null>(null);
@@ -45,6 +46,10 @@ function AllianceComponent() {
     setModelEvent(model_event);
     setMatchType(match_type);
   };
+
+  const clearBrackets = () => {
+    setSlots(Array.from({ length: 8 }, () => [{ team: null }, { team: null }, { team: null }]));
+  }
 
   const updateBrackets = () => {
     // map slots to a json payload formatted {A1: [team1, team2, team3], A2: [team4, team5, team6], ...}
@@ -81,7 +86,7 @@ function AllianceComponent() {
     // POST alliances to /model/district_model_event_match_type/bracket
     let baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
     // /model/<model_key>/predict/<red>/<blue>
-    let url = `${baseUrl}/model/${district}_${model_event}_${match_type}/predict/${red}/${blue}`;
+    let url = `${baseUrl}/model/${district}_${model_event}_${match_type}/predict/${red}/${blue}/${model_method}`;
     // POST the alliances to the url using fetch:
     fetch(url)
       .then(response => response.json())
@@ -115,6 +120,11 @@ function AllianceComponent() {
     }
   };
 
+  const renderStats = (team: Team) => {
+    // return each stat to two decimal places
+    return `OPR: ${team.stats.opr.mu.toFixed(2)}\nDPR: ${team.stats.dpr.mu.toFixed(2)}\nTPR: ${team.stats.tpr.mu.toFixed(2)}`;
+  }
+
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <EventForm onTeamsUpdate={handleTeamsUpdate} />
@@ -126,10 +136,10 @@ function AllianceComponent() {
                 (leftTeams.length > 0) ? (
                   (() => {
                     let colorScale = scaleLinear<string>()
-                      .domain([Math.min(...leftTeams.map(team => team.stats.opr)), Math.max(...leftTeams.map(team => team.stats.opr))])
+                      .domain([Math.min(...leftTeams.map(team => team.stats.opr.mu)), Math.max(...leftTeams.map(team => team.stats.opr.mu))])
                       .range(['lightgreen', 'red']);                   
-                    return leftTeams.sort((a, b) => b.stats.opr - a.stats.opr).map((team, index) => { 
-                      let calcBackgroundColor = colorScale(team.stats.opr)
+                    return leftTeams.sort((a, b) => b.stats.tpr.mu - a.stats.tpr.mu).map((team, index) => { 
+                      let calcBackgroundColor = colorScale(team.stats.opr.mu)
                       
                       return (
                       <Draggable key={team.team} draggableId={team.team} index={index}>
@@ -137,9 +147,10 @@ function AllianceComponent() {
                           const style = {
                             backgroundColor: calcBackgroundColor,                      
                             ...provided.draggableProps.style,
-                        } ;
-                          return (<div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} style={style} title={team.stats.opr.toString()} className="team-div" >                            
-                            {team.team}
+                          } ;
+                          const title=renderStats(team);
+                          return (<div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} style={style} title={title} className="team-div" >                            
+                            {team.number+' '+team.nickname}
                           </div>)
                         }
                         }
@@ -152,6 +163,8 @@ function AllianceComponent() {
           )}
         </StrictModeDroppable>
         <div className='alliance-list'>
+        <div style={{width:'100%', textAlign:'right', paddingRight:'10px', boxSizing: 'border-box'}}>% Win</div>
+        <hr></hr>
         {Array.from({ length: 8 }, (_, i) => i + 1).map(id => (
         <div key={id} className='alliance-slots'>
           <div style={{ marginRight: '10px' }}>A{id}</div>
@@ -162,9 +175,10 @@ function AllianceComponent() {
                   ref={provided.innerRef}
                   style={{ backgroundColor: snapshot.isDraggingOver ? 'lightblue' : 'lightgrey' }}
                   {...provided.droppableProps}
+                  title={`OPR: ${slot.team?.stats.opr.mu}\nDPR: ${slot.team?.stats.dpr.mu}\nTPR: ${slot.team?.stats.tpr.mu}`}                         
                   className = 'alliance-slot'
                 >
-                  {slot.team? slot.team.team : 'Drop team here'}
+                  {slot.team? slot.team.number : 'Drop team here'}
                   {provided.placeholder}
                 </div>
               )}
@@ -172,17 +186,24 @@ function AllianceComponent() {
           ))}
           <div className='overall-value'>{overall && ('A'+id) in overall ? overall['A'+id]/10 : ''}</div>
           </div>))}
-          <button onClick={updateBrackets}>Run Brackets</button>
+          <button onClick={updateBrackets}>Run Brackets</button> <button onClick={clearBrackets}>Clear Brackets</button>
         </div>
         <div className='bracket-list'>
                 <h2>Single Match</h2>
-                <input type="text" value={alliance1} onChange={e => setAlliance1(e.target.value) } className="input-field"></input>
-                <input type="text" value={alliance2} onChange={e => setAlliance2(e.target.value) } className="input-field"></input>
+                <div className='form-group'>
+                  <label>Red: </label><input type="text" value={alliance1} onChange={e => setAlliance1(e.target.value) } className="input-field"></input>
+                </div>
+                <div className='form-group'>
+                  <label> Blue: </label><input type="text" value={alliance2} onChange={e => setAlliance2(e.target.value) } className="input-field"></input>
+                </div>
+                <div className='form-group'>                  
+                  <label>Method (opr,dpr,tpr): </label><input type="text" value={model_method} onChange={e => setModelMethod(e.target.value) } className="input-field"></input>
+                </div>
                 <button onClick={predictMatch}>Run Match</button>
                 <hr></hr>
                 {spread && <div>Spread: {spread.toFixed(2)}</div>}
                 {sigma && <div>Sigma: {sigma.toFixed(2)}</div>}
-                {pRed && <div>Prob Red: {pRed.toFixed(2)}</div>}                
+                {pRed && <div>Red Win: {(pRed*100).toFixed(2)}%</div>}                
                 {spread && sigma && <GaussianPlot mean={spread} sigma={sigma} />}
 
         </div>
