@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import numpy as np
 from tqdm import tqdm
 from flask_cors import CORS
-import scipy.stats as stats 
+import scipy.stats as stats
 from OPR import OPR
 from TBA import TBA
 from flask import Flask, jsonify, request, render_template, send_from_directory
@@ -16,12 +16,10 @@ from flask import Flask, jsonify, request, render_template, send_from_directory
 # TODO:
 # Periodic match refresh
 # Other model types
-# model selection for brackets
 # Overall OPR rankings page
 # Fix the best 2 of 3 bracket?
-# button to auto-populate alliances
+# button to auto-populate alliances - basic, greedy strategies
 # dropdown for event selection
-# improved layout
 # enable arbitrary district selection, all district selection
 
 # model/match data somewhere that doesn't trigger reload.
@@ -132,8 +130,8 @@ def refresh_model(model_key):
     global all_matches
     global models
     # TODO this must run async: https://stackoverflow.com/questions/14384739/how-can-i-add-a-background-thread-to-flask
-    TBA.fetch_all_matches(2024, 'pnw')
-    all_matches = TBA.matches
+    tba.fetch_all_matches()
+    all_matches = tba.matches
     models = {}
     return jsonify({'all_matches': len(all_matches['matches'])})
 

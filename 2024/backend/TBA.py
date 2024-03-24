@@ -39,7 +39,7 @@ class TBA:
             self.matches['last_modified'] = os.stat(self.matches_file).st_mtime
 
 
-    def fetch_all_matches(self, eventsToPull="", reset=False, if_modified_since='',):
+    def fetch_all_matches(self, eventsToPull="", reset=False, if_modified_since=''):
         """
         Fetch all matches associated with a requested year, 
         filtered to eventsToPull, or all events if it's empty.

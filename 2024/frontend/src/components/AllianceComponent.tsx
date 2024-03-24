@@ -6,6 +6,7 @@ import EventForm from './EventForm';
 import { Team } from '../types/TeamTypes';
 import StrictModeDroppable from './StrictModeDroppable';
 import GaussianPlot from './GaussianPlot';
+import RatingsView from './RatingsView';
 
 function AllianceComponent() {
   const [district, setDistrict] = useState(localStorage.getItem('district') || '');
@@ -25,7 +26,11 @@ function AllianceComponent() {
     () => {const savedTeams = localStorage.getItem('teams');
     return savedTeams ? JSON.parse(savedTeams) : [];}
   );
-  
+  const [allTeams, setAllTeams] = useState<Team[]>(() => {
+    const savedTeams = localStorage.getItem('allteams');
+    return savedTeams ? JSON.parse(savedTeams) : [];}
+  );
+
   // we will move these to a separate component
   const [slots, setSlots] = useState<Array<Array<{ team: Team | null }>>>( () => {
     const savedSlots = localStorage.getItem('slots');
@@ -34,6 +39,7 @@ function AllianceComponent() {
 
   useEffect(() => {
     localStorage.setItem('teams', JSON.stringify(leftTeams));
+    localStorage.setItem('allteams', JSON.stringify(allTeams));
     localStorage.setItem('district', district);
         localStorage.setItem('modelEvent', modelEvent);
         localStorage.setItem('matchType', matchType);
@@ -42,6 +48,7 @@ function AllianceComponent() {
   
   const handleTeamsUpdate = (district: string, model_event: string, match_type: string, teams: Team[]) => {
     setLeftTeams(teams);
+    setAllTeams(teams);
     setDistrict(district);
     setModelEvent(model_event);
     setMatchType(match_type);
@@ -231,6 +238,9 @@ function AllianceComponent() {
                 {spread && sigma && <GaussianPlot mean={spread} sigma={sigma} />}
 
         </div>
+        </div>
+        <div className='ratings-container'>
+          <RatingsView teams={allTeams} />
         </div>
     </DragDropContext>
   );

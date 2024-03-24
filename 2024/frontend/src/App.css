@@ -37,7 +37,8 @@
 }
 
 .event-form {
-  margin: 10px;
+  margin: auto;
+  padding: 10px;
   width: 20%;
 }
 
@@ -71,6 +72,7 @@
   width: 70%;
   display: flex;
   height:100%;
+  margin: auto;
 }
 
 .team-list {
@@ -84,6 +86,7 @@
   width: 50%;
   border: 1px solid black;
   margin: 5px;
+  padding: 5px;
 }
 
 .bracket-list {
@@ -114,4 +117,9 @@
 .overall-value {
   margin-left: '10px';
   min-width: 50px;
+}
+
+.ratings-container {
+  width: 80%;
+  margin: auto;
 }
