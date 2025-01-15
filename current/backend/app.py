@@ -26,6 +26,7 @@ from flask import Flask, jsonify, request, render_template, send_from_directory
 load_dotenv()
 logging.basicConfig(level=logging.DEBUG)
 
+assert 'TBA_API_KEY' in os.environ, 'TBA_API_KEY not set'
 DATA_FOLDER = os.getenv('DATA_FOLDER', '../')
 logging.info('Using data folder: %s', DATA_FOLDER)
 if not os.path.exists(DATA_FOLDER):

@@ -13,7 +13,7 @@ az webapp create --resource-group frcBrackets --plan frcBrackets --name frcBrack
 # Navigate to your Flask app's directory
 rm -rf static/build
 cd ../frontend
-npm build
+npm run build
 cp -a build/. ../backend/static
 cd ../backend
 

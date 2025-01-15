@@ -10,7 +10,7 @@
 2. `runScoutingReport.py`
 
 3. Web page: 
-    - backend\  - python flask app
+    - backend\  - python flask app - see deploy.sh for build/deploy steps
     - frontend\ - react front-end
 
 
