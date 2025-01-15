@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Brackets</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="/static/api.js"></script>
+  </head>
+  <body>
+    <form>
+    <div id="model_selection">
+        <h1>Choose Model Criteria</h1>
+        <label for="district">District:</label><br>
+        <input type="text" id="district" name="district"><br>
+        <label for="model_event">Event:</label><br>
+        <input type="text" id="model_event" name="event"><br>
+        <label for="match_type">Match Type:</label><br>
+        <input type="text" id="match_type" name="match_type"><br>
+    </div>
+    <div id="event_selection">
+        <h1>Choose Event</h1>
+        <label for="event">Event:</label><br>
+        <input type="text" id="event" name="event"><br>
+        <input type="submit" value="Submit">
+    </div>
+    </form>
+      <div id="container" style="display: flex;">
+        <div id="teams">
+            CHOOSE A DISTRICT, EVENT, AND MATCH TYPE ABOVE
+        </div>
+
+        <div id="brackets_container">
+            <div id="brackets">
+            </div>        
+        </div>
+        <div id="bracket_results">
+
+        </div>
+    </div>
+    </body>
