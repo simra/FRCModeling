@@ -2,7 +2,12 @@ from OPR import OPR
 from fetchMatches import fetch_event_teams
 import pickle
 import os
+import argparse
 
+parser = argparse.ArgumentParser(description='Generate a scouting report for an event')
+parser.add_argument('event_key', type=str, default='2024wasam', help='Event key to generate a scouting report for')
+args = parser.parse_args()
+year = int(args.event_key[:4])
 
 def create_model(district, event, match_type, force_recompute=False):
     '''
@@ -15,7 +20,7 @@ def create_model(district, event, match_type, force_recompute=False):
     model_key=f'{district}_{event}_{match_type}'
     model_fn = f'model_{model_key}.pkl'
     
-    filename = 'matches_2024.pkl'        
+    filename = f'matches_{year}.pkl'        
     with open(filename, 'rb') as f:
         all_matches = pickle.load(f)
         # stat the matches file to get its last modified time and set it on all_matches
@@ -51,14 +56,25 @@ def create_model(district, event, match_type, force_recompute=False):
     
     return opr
 
+def scrub(s):
+    return s.replace(',', '_').replace(' ', '_')
 
 def runScoutingReport(event_key):
     opr = create_model('pnw', 'all', 'all')
     event_teams = fetch_event_teams(event_key)
-
+    print(f"Scouting Report for {event_key}")
+    header = "team_number,nickname,opr_mu,opr_sigma,dpr_mu,dpr_sigma,tpr_mu,tpr_sigma"
+    print(header)
+    results = []
     for t in event_teams:
-        o = opr.opr_lookup[t.key]
-        output = (t.team_number, t.nickname, o['opr']['mu'], o['opr']['sigma'], o['dpr']['mu'], o['dpr']['sigma'], o['tpr']['mu'], o['tpr']['sigma'])
-        print(','.join(map(str, output)))
+        if t.key in opr.opr_lookup:
+            o = opr.opr_lookup[t.key]
+            output = (t.team_number, scrub(t.nickname), o['opr']['mu'], o['opr']['sigma'], o['dpr']['mu'], o['dpr']['sigma'], o['tpr']['mu'], o['tpr']['sigma'])
+        else:
+            output = (t.team_number, scrub(t.nickname), 0, 0, 0, 0, 0, 0)
+        results.append(output)
+    results = sorted(results, key=lambda x: x[-2], reverse=True)
+    for row in results:    
+        print(','.join(map(str, row)))
 
-runScoutingReport('2024wasam')
+runScoutingReport(args.event_key)

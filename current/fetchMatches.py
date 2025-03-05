@@ -52,26 +52,37 @@ def fetch_all_matches(year, eventsToPull="", reset=False):
                 result = {}
     try:
         events = api_instance.get_events_by_year(year, if_modified_since=if_modified_since)
-        if eventsFilter is not None:
-            events = [e for e in events if e.key in eventsFilter]
+    except ApiException as e:
+        print("Exception when calling EventApi->get_events_by_year: %s\n" % e)
+        raise e
 
-        result = {
-            'headers': api_instance.api_client.last_response.getheaders(),
-            'events': events
-        }
-        if 'matches' not in result:
-            result['matches'] = {}
-            result['event_teams'] = {}
-        for e in events:
-            print('Fetching event {}'.format(e.key))
+    if eventsFilter is not None:
+        events = [e for e in events if e.key in eventsFilter]
+
+    result = {
+        'headers': api_instance.api_client.last_response.getheaders(),
+        'events': events
+    }
+    if 'matches' not in result:
+        result['matches'] = {}
+        result['event_teams'] = {}
+    for e in events:
+        print('Fetching event {}'.format(e.key))
+        try:
             matches = api_instance.get_event_matches(e.key, if_modified_since=if_modified_since)
             result['matches'][e.key]=matches
-            # print(matches)
+        except ApiException as e:
+            print("Exception when calling EventApi->get_event_matches: %s\n" % e)
+            continue
+
+        try:
             teams = api_instance.get_event_teams(e.key, if_modified_since=if_modified_since)
             result['event_teams'][e.key]=teams
-        
-    except ApiException as e:
-        print("Exception when calling EventApi->get_team_events: %s\n" % e)
+        except ApiException as e:
+            print("Exception when calling EventApi->get_event_teams: %s\n" % e)
+            continue
+
+   
     
     if 'events' in result:
         if os.path.exists(outfile):
