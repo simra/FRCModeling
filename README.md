@@ -1,3 +1,7 @@
+# Setup and usage: 
+
+See /current/README.md
+
 # FRCDataAnalytics
 
 The goal of this repo is to generate predictive models for FRC matches.  The folders are structured by competition year. 
