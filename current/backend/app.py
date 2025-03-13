@@ -33,7 +33,7 @@ if not os.path.exists(DATA_FOLDER):
     os.makedirs(DATA_FOLDER)
 
 models = {}
-tba = TBA(year=2024, district='pnw')
+tba = TBA(year=2025, district='pnw')
 all_matches = tba.matches
 
 app = Flask(__name__, static_folder='static/build')
@@ -55,7 +55,7 @@ def create_model(district, event, match_type, force_recompute=False):
     match_type: string, the match type to filter by. eg. 'qm', 'all' for all match types
     force_recompute: bool, if True, recompute the model even if it already exists
     '''
-
+    logging.info('Creating model for %s %s %s', district, event, match_type)
     model_key=f'{district}_{event}_{match_type}'
     model_fn = f'{DATA_FOLDER}/model_{model_key}.pkl'
             
@@ -116,6 +116,7 @@ def get_model_info(model_key):
     model_key: string, the key for the model to get info for
     returns: a json object with the model info
     '''
+    logging.info('Getting model info for %s', model_key)
     opr = get_model(model_key)
     (district, events, match_type) = model_key.split('_')
     timestamp = strftime('%Y-%m-%d %H:%M:%S', gmtime(opr.data_timestamp))
@@ -128,6 +129,7 @@ def refresh_model(model_key):
     model_key: string, the key for the model to refresh
     returns: a json object with the model info
     '''
+    logging.info('Refreshing model %s', model_key)
     global all_matches
     global models
     # TODO this must run async: https://stackoverflow.com/questions/14384739/how-can-i-add-a-background-thread-to-flask
@@ -219,7 +221,8 @@ def run_bracket(model_key, model_method):
             if t not in opr.opr_lookup:
                 # send a bad request result (400) if a team is not found
                 logging.error('Team %s not found in model %s', t, model_key)
-                return jsonify({'error': f'Team {t} not found in model {model_key}'})
+                #return jsonify({'error': f'Team {t} not found in model {model_key}'})
+                opr.opr_lookup[t] = {'opr': {'mu': 0, 'sigma': 0}, 'dpr': {'mu': 0, 'sigma': 0}, 'tpr': {'mu': 0, 'sigma': 0}}
     reverse_lookup = {str(v):k for k,v in alliances.items()}
 
     bracket = {

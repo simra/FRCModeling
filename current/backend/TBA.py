@@ -45,6 +45,7 @@ class TBA:
         filtered to eventsToPull, or all events if it's empty.
         Set reset=True to force re-fetching everything.
         """
+        logging.info(f'Fetching matches for {self.year}, events: {eventsToPull}')
         api_instance = self.api_instance
         result = {}
         events_filter = None
@@ -77,7 +78,7 @@ class TBA:
                 result['matches'] = {}
                 result['event_teams'] = {}
             for e in events:
-                logging.info('Fetching event %s', e)
+                logging.info('Fetching event %s', e.key)
                 matches = api_instance.get_event_matches(e.key, if_modified_since=if_modified_since)
                 result['matches'][e.key]=matches
                 # print(matches)
