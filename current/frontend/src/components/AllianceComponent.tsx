@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DragDropContext, Droppable, Draggable, DroppableProvided, DraggableProvided, DroppableProps, DropResult, DroppableStateSnapshot } from 'react-beautiful-dnd';
+import { DragDropContext, Draggable, DroppableProvided, DraggableProvided, DroppableStateSnapshot } from 'react-beautiful-dnd';
 import { scaleLinear } from 'd3-scale';
 import Select from 'react-select';
 import EventForm from './EventForm';
@@ -12,7 +12,7 @@ function AllianceComponent() {
   const [district, setDistrict] = useState(localStorage.getItem('district') || '');
   const [modelEvent, setModelEvent] = useState(localStorage.getItem('modelEvent') || '');
   const [matchType, setMatchType] = useState(localStorage.getItem('matchType') || '');  
-  const [density, setDensity] = useState<{[key: number]: {[key: string]: number} }>({});
+  //const [density, setDensity] = useState<{[key: number]: {[key: string]: number} }>({});
   const [overall, setOverall] = useState<{[key: string]: number}>({});
   const [alliance1, setAlliance1] = useState('');
   const [alliance2, setAlliance2] = useState('');
@@ -44,7 +44,7 @@ function AllianceComponent() {
         localStorage.setItem('modelEvent', modelEvent);
         localStorage.setItem('matchType', matchType);
         localStorage.setItem('slots', JSON.stringify(slots));
-      }, [leftTeams, district, modelEvent, matchType, slots]);
+      }, [leftTeams, district, modelEvent, matchType, allTeams, slots]);
   
   const handleTeamsUpdate = (district: string, model_event: string, match_type: string, teams: Team[]) => {
     setLeftTeams(teams);
@@ -85,7 +85,7 @@ function AllianceComponent() {
     }).then(response => response.json())
     .then(data => {
       console.log(data);
-      setDensity(data['density']);
+      //setDensity(data['density']);
       setOverall(data['overall']);
     });
 

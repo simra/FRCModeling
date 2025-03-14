@@ -37,7 +37,7 @@ jobs:
       - name: Copy build to backend
         run: |
             rm -rf current/backend/static/build
-            cp -a current/frontend/build/. current/backend/static
+            cp -a current/frontend/build current/backend/static/build
 
             
       - name: Set up Python version

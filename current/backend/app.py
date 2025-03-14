@@ -43,10 +43,11 @@ CORS(app)
 @app.route('/<path:path>')
 def serve(path):
     logging.info('Serving %s', path)
-    if path != "" and os.path.exists(app.static_folder + '/' + path):
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
         return send_from_directory(app.static_folder, path)
     else:
         return send_from_directory(app.static_folder, 'index.html')
+
     
 def create_model(district, event, match_type, force_recompute=False):
     '''
