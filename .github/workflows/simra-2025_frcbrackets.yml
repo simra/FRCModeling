@@ -58,8 +58,10 @@ jobs:
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
       - name: Zip artifact for deployment
-        run: zip release.zip ./current/backend/* -r
-
+        run: |
+          cd current
+          zip -r release.zip backend  
+        
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
         with:
