@@ -60,7 +60,7 @@ jobs:
       - name: Zip artifact for deployment
         run: |
           cd current
-          zip -r release.zip backend  
+          zip -r ../release.zip backend  
         
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
