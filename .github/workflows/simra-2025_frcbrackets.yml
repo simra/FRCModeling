@@ -19,6 +19,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install frontend dependencies
+        run: |
+            cd current/frontend
+            npm install
+    
+      - name: Build frontend
+        run: |
+            cd current/frontend
+            npm run build
+    
+      - name: Copy build to backend
+        run: |
+            rm -rf current/backend/static/build
+            cp -a current/frontend/build/. current/backend/static
+
+            
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
