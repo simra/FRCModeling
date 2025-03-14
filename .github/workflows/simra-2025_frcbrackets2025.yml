@@ -19,6 +19,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install frontend dependencies
+        run: |
+            cd current/frontend
+            npm install
+    
+      - name: Build frontend
+        run: |
+            cd current/frontend
+            npm run build
+    
+      - name: Copy build to backend
+        run: |
+            rm -rf current/backend/static/build
+            cp -a current/frontend/build current/backend/static/build
+
+
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
@@ -30,13 +51,16 @@ jobs:
           source venv/bin/activate
       
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          cd current/backend
+          pip install -r requirements.txt
         
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
       - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
-
+        run: |
+          cd current
+          zip -r ../release.zip backend  
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
         with:
