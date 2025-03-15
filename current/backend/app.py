@@ -36,6 +36,7 @@ models = {}
 tba = TBA(year=2025, district='pnw')
 all_matches = tba.matches
 last_fetch = os.stat(tba.matches_file).st_mtime if os.path.exists(tba.matches_file) else 0
+logging.info('Last fetch: %s', last_fetch)
 
 app = Flask(__name__, static_folder='static/build')
 CORS(app)
@@ -63,6 +64,7 @@ def create_model(district, event, match_type, force_recompute=False):
 
     global all_matches
     global last_fetch
+    logging.info(f'Last fetch: {last_fetch} Time delta: {time.time() - last_fetch}')
     if all_matches is None or time.time() - last_fetch > 3600:
         logging.info('Fetching all matches')
         tba.fetch_all_matches()

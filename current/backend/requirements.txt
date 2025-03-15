@@ -4,3 +4,6 @@ flask-cors
 scipy
 numpy
 tqdm
+six
+urllib3
+certifi
