@@ -17,16 +17,19 @@ function RatingsView({ teams }: { teams: Team[] }) {
             name: "OPR",
             selector: (row: Team) => row.stats.opr.mu,
             sortable: true,
+            cell: (row: Team) => row.stats.opr.mu.toFixed(2)
         },
         {
             name: "DPR",
             selector: (row: Team) => row.stats.dpr.mu,
             sortable: true,
+            cell: (row: Team) => row.stats.dpr.mu.toFixed(2)
         },
         {
             name: "TPR",
             selector: (row: Team) => row.stats.tpr.mu,
             sortable: true,
+            cell: (row: Team) => row.stats.tpr.mu.toFixed(2)
         }
     ]
   return (

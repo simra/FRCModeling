@@ -49,6 +49,7 @@ function AllianceComponent() {
   const handleTeamsUpdate = (district: string, model_event: string, match_type: string, teams: Team[]) => {
     setLeftTeams(teams);
     setAllTeams(teams);
+    setSlots(Array.from({ length: 8 }, () => [{ team: null }, { team: null }, { team: null }]));
     setDistrict(district);
     setModelEvent(model_event);
     setMatchType(match_type);
@@ -137,6 +138,44 @@ function AllianceComponent() {
     }
   };
 
+  const handleDoubleClick = (team: Team) => {
+    // Find the next available slot in the alliance list
+    for (let j = 0; j < slots[0].length; j++) {
+      for (let i = 0; i < slots.length; i++) {
+        if (slots[i][j].team === null) {
+          // Move the team to the next available slot
+          setSlots(slots.map((alliance, index) => (index === i) ? 
+            alliance.map((slot, index2) => index2 === j ? { team: team } : slot) : alliance));
+          // Remove the team from the leftTeams list
+          setLeftTeams(leftTeams.filter(t => t.team !== team.team));
+          return;
+        }
+      }
+    }
+  };
+
+  const clearAlliances = () => {
+    setLeftTeams(allTeams);
+    setSlots(Array.from({ length: 8 }, () => [{ team: null }, { team: null }, { team: null }]));
+  }
+
+  const autoPopulate = () => {
+    let newTeams = [...allTeams].sort((a, b) => b.stats.tpr.mu - a.stats.tpr.mu);
+    let newSlots = Array.from({ length: 8 }, () => [
+      { team: null }, { team: null }, { team: null }
+    ]) as Array<Array<{ team: Team | null }>>
+    for (let j= 0; j < 3; j++) {
+      for (let i = 0; i < 8; i++) {
+        let team = newTeams.shift();
+        if (team) {
+          newSlots[i][j].team = team;
+        }
+      }
+    }
+    setLeftTeams(newTeams);
+    setSlots(newSlots);
+  }
+
   const renderStats = (team: Team) => {
     // return each stat to two decimal places
     return `OPR: ${team.stats.opr.mu.toFixed(2)}\nDPR: ${team.stats.dpr.mu.toFixed(2)}\nTPR: ${team.stats.tpr.mu.toFixed(2)}`;
@@ -157,6 +196,11 @@ function AllianceComponent() {
         onTeamsUpdate={handleTeamsUpdate} 
         onPropUpdate={handlePropUpdate}  />
       <div className='alliance-component'>
+        <div className='top-to-bottom'>
+        <div className='buttons-container'>
+          <button onClick={() => autoPopulate()}>Auto Populate</button>
+          <button onClick={() => clearAlliances()}>Clear Alliances</button>
+        </div>
         <StrictModeDroppable droppableId="left">
           {(provided: DroppableProvided) => (
             <div ref={provided.innerRef} {...provided.droppableProps} className="team-list">
@@ -177,7 +221,14 @@ function AllianceComponent() {
                             ...provided.draggableProps.style,
                           } ;
                           const title=renderStats(team);
-                          return (<div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} style={style} title={title} className="team-div" >                            
+                          return (<div 
+                            ref={provided.innerRef} 
+                            {...provided.draggableProps} 
+                            {...provided.dragHandleProps} 
+                            style={style} title={title} 
+                            className="team-div"
+                            onDoubleClick={() => handleDoubleClick(team) }
+                          >                            
                             {team.number+' '+team.nickname}
                           </div>)
                         }
@@ -190,6 +241,7 @@ function AllianceComponent() {
             </div>
           )}
         </StrictModeDroppable>
+        </div>
         <div className='alliance-list'>
         <div style={{width:'100%', textAlign:'right', paddingRight:'10px', boxSizing: 'border-box'}}>% Win</div>
         <hr></hr>

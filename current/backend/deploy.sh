@@ -14,7 +14,7 @@ az webapp create --resource-group frcBrackets --plan frcBrackets --name frcBrack
 rm -rf static/build
 cd ../frontend
 npm run build
-cp -a build/. ../backend/static
+cp -a build/ ../backend/static/build
 cd ../backend
 
 

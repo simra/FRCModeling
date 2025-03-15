@@ -11,7 +11,7 @@ import scipy.stats as stats
 from OPR import OPR
 from TBA import TBA
 from flask import Flask, jsonify, request, render_template, send_from_directory
-
+import time
 
 # TODO:
 # Periodic match refresh
@@ -35,6 +35,7 @@ if not os.path.exists(DATA_FOLDER):
 models = {}
 tba = TBA(year=2025, district='pnw')
 all_matches = tba.matches
+last_fetch = os.stat(tba.matches_file).st_mtime if os.path.exists(tba.matches_file) else 0
 
 app = Flask(__name__, static_folder='static/build')
 CORS(app)
@@ -56,10 +57,17 @@ def create_model(district, event, match_type, force_recompute=False):
     match_type: string, the match type to filter by. eg. 'qm', 'all' for all match types
     force_recompute: bool, if True, recompute the model even if it already exists
     '''
-    logging.info('Creating model for %s %s %s', district, event, match_type)
+    logging.info(f'Create model: {district} {event} {match_type} {force_recompute}')
     model_key=f'{district}_{event}_{match_type}'
     model_fn = f'{DATA_FOLDER}/model_{model_key}.pkl'
-            
+
+    global all_matches
+    global last_fetch
+    if all_matches is None or time.time() - last_fetch > 3600:
+        logging.info('Fetching all matches')
+        tba.fetch_all_matches()
+        all_matches = tba.matches 
+        last_fetch = os.stat(tba.matches_file).st_mtime     
 
     #if all_matches is None:
     #    filename = f'{DATA_FOLDER}/matches_2024.pkl'        
@@ -69,6 +77,7 @@ def create_model(district, event, match_type, force_recompute=False):
     #        all_matches['last_modified'] = os.stat(filename).st_mtime
     
     if not os.path.exists(model_fn) or force_recompute or all_matches['last_modified'] > os.stat(model_fn).st_mtime:
+        logging.info('Creating model %s', model_key)
         selected_district = [m.key for m in all_matches['events']] if district == 'all' else \
             [m.key for m in all_matches['events'] if m.district and m.district.abbreviation==district]
         
