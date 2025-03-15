@@ -4,6 +4,7 @@ import { scaleLinear } from 'd3-scale';
 import Select from 'react-select';
 import EventForm from './EventForm';
 import { Team } from '../types/TeamTypes';
+import { TBAAlliance }  from '../types/TBAAlliance';
 import StrictModeDroppable from './StrictModeDroppable';
 import GaussianPlot from './GaussianPlot';
 import RatingsView from './RatingsView';
@@ -12,6 +13,7 @@ function AllianceComponent() {
   const [district, setDistrict] = useState(localStorage.getItem('district') || '');
   const [modelEvent, setModelEvent] = useState(localStorage.getItem('modelEvent') || '');
   const [matchType, setMatchType] = useState(localStorage.getItem('matchType') || '');  
+  const [predictionEvent, setPredictionEvent] = useState(localStorage.getItem('predictionEvent') || '');
   //const [density, setDensity] = useState<{[key: number]: {[key: string]: number} }>({});
   const [overall, setOverall] = useState<{[key: string]: number}>({});
   const [alliance1, setAlliance1] = useState('');
@@ -44,7 +46,8 @@ function AllianceComponent() {
         localStorage.setItem('modelEvent', modelEvent);
         localStorage.setItem('matchType', matchType);
         localStorage.setItem('slots', JSON.stringify(slots));
-      }, [leftTeams, district, modelEvent, matchType, allTeams, slots]);
+        localStorage.setItem('predictionEvent', predictionEvent);
+      }, [leftTeams, district, modelEvent, matchType, predictionEvent, allTeams, slots]);
   
   const handleTeamsUpdate = (district: string, model_event: string, match_type: string, teams: Team[]) => {
     setLeftTeams(teams);
@@ -55,10 +58,11 @@ function AllianceComponent() {
     setMatchType(match_type);
   };
 
-  const handlePropUpdate = (district: string, model_event: string, match_type: string) => {
+  const handlePropUpdate = (district: string, model_event: string, match_type: string, predictionEvent: string) => {
     setDistrict(district);
     setModelEvent(model_event);
     setMatchType(match_type);
+    setPredictionEvent(predictionEvent);
   }
 
   const clearBrackets = () => {
@@ -176,6 +180,31 @@ function AllianceComponent() {
     setSlots(newSlots);
   }
 
+  const popFromEvent = () => {
+    // fetch the alliances from /model/<model_key>/event/<event_key>/alliances
+    let baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+    let url = `${baseUrl}/model/${district}_${modelEvent}_${matchType}/event/${predictionEvent}/alliances`;
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        let newSlots = Array.from({ length: 8 }, () => [
+          { team: null }, { team: null }, { team: null }
+        ]) as Array<Array<{ team: Team | null }>>
+        data.forEach((alliance: TBAAlliance, index: number) => {
+          alliance.picks.forEach((team, index2) => {
+            let teamObj = allTeams.find(t => t.team === team);
+            if (teamObj) {
+              newSlots[index][index2].team = teamObj;
+            }
+          });
+        });
+        setSlots(newSlots);
+        // remove the teams from the leftTeams list
+        let newTeams = leftTeams.filter(t => !data.flat().includes(t.team));
+        setLeftTeams(newTeams);
+      });
+  }
+
   const renderStats = (team: Team) => {
     // return each stat to two decimal places
     return `OPR: ${team.stats.opr.mu.toFixed(2)}\nDPR: ${team.stats.dpr.mu.toFixed(2)}\nTPR: ${team.stats.tpr.mu.toFixed(2)}`;
@@ -193,12 +222,14 @@ function AllianceComponent() {
         district={district} 
         modelEvent={modelEvent} 
         matchType={matchType}
+        predictionEvent={predictionEvent}
         onTeamsUpdate={handleTeamsUpdate} 
         onPropUpdate={handlePropUpdate}  />
       <div className='alliance-component'>
         <div className='top-to-bottom'>
         <div className='buttons-container'>
           <button onClick={() => autoPopulate()}>Auto Populate</button>
+          <button onClick={() => popFromEvent()}>Pop. from Event</button>
           <button onClick={() => clearAlliances()}>Clear Alliances</button>
         </div>
         <StrictModeDroppable droppableId="left">

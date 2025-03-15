@@ -213,6 +213,30 @@ def get_event_teams(model_key, event_key):
     return jsonify(result)
 
 
+@app.route('/model/<model_key>/event/<event_key>/alliances')
+def get_event_alliances(model_key, event_key):
+    '''
+    model_key: string, the key for the model to use
+    event_key: string, the key for the event to get the teams for
+    returns: a json object with the list of teams in the event
+    '''
+    logging.info('Getting teams for model %s event %s', model_key, event_key)
+    opr = get_model(model_key)    
+        
+    alliances = tba.fetch_event_alliances(event_key)
+    logging.info('Found %s alliances', len(alliances))
+    logging.info('Alliances: %s', alliances)
+    result = [
+        {
+            'name': a.name,
+            'picks': a.picks,
+            'stats': {t: opr.opr_lookup[t] for t in a.picks if t in opr.opr_lookup}
+        }
+        for a in alliances
+    ]
+    return jsonify(result)
+
+
 @app.route('/model/<model_key>/bracket/<model_method>', methods=['POST'])
 def run_bracket(model_key, model_method):
     '''

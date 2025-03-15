@@ -112,6 +112,8 @@ class TBA:
     def fetch_event_teams(self, event_key):
         return self.api_instance.get_event_teams(event_key)
 
+    def fetch_event_alliances(self, event_key):
+        return self.api_instance.get_event_alliances(event_key)
 
     def fetch_matches(self, team_key = 'frc492', if_modified_since=''):
         """
