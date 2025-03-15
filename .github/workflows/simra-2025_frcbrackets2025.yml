@@ -39,7 +39,6 @@ jobs:
             rm -rf current/backend/static/build
             cp -a current/frontend/build current/backend/static/build
 
-
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
@@ -59,8 +58,8 @@ jobs:
 
       - name: Zip artifact for deployment
         run: |
-          cd current
-          zip -r ../release.zip backend  
+          cd current/backend
+          zip -r ../../release.zip .  
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
         with:
@@ -88,7 +87,6 @@ jobs:
       - name: Unzip artifact for deployment
         run: unzip release.zip
 
-      
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -102,4 +100,3 @@ jobs:
         with:
           app-name: 'frcBrackets2025'
           slot-name: 'Production'
-          
