@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Team } from '../types/TeamTypes'; 
 import moment from 'moment-timezone';
 
