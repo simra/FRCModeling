@@ -184,7 +184,7 @@ function AllianceComponent() {
     let url = `${baseUrl}/model/${district}_${modelEvent}_${matchType}/event/${predictionEvent}/alliances`;
     fetch(url)
       .then(response => response.json())
-      .then(data => {
+      .then((data : TBAAlliance[])=> {
         let newSlots = Array.from({ length: 8 }, () => [
           { team: null }, { team: null }, { team: null }
         ]) as Array<Array<{ team: Team | null }>>
@@ -198,7 +198,8 @@ function AllianceComponent() {
         });
         setSlots(newSlots);
         // remove the teams from the leftTeams list
-        let newTeams = leftTeams.filter(t => !data.flat().includes(t.team));
+        let newTeams = allTeams.filter(t => !data.map(alliance => alliance.picks).flat().includes(t.team));
+        console.log(newTeams);
         setLeftTeams(newTeams);
       });
   }
