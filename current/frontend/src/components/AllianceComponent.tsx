@@ -76,7 +76,6 @@ function AllianceComponent() {
       acc['A' + (index + 1)] = alliance.map(slot => slot.team ? slot.team.team : '');
       return acc;
     }, {});
-    console.log(payload);
     // POST alliances to /model/district_model_event_match_type/bracket
     let baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
     let url = `${baseUrl}/model/${district}_${modelEvent}_${matchType}/bracket/${bracketMethod}`;
@@ -89,7 +88,6 @@ function AllianceComponent() {
       body: JSON.stringify(payload)
     }).then(response => response.json())
     .then(data => {
-      console.log(data);
       //setDensity(data['density']);
       setOverall(data['overall']);
     });
@@ -191,10 +189,10 @@ function AllianceComponent() {
           { team: null }, { team: null }, { team: null }
         ]) as Array<Array<{ team: Team | null }>>
         data.forEach((alliance: TBAAlliance, index: number) => {
-          alliance.picks.forEach((team, index2) => {
+          alliance.picks.slice(0,3).forEach((team, index2) => {
             let teamObj = allTeams.find(t => t.team === team);
             if (teamObj) {
-              newSlots[index][index2].team = teamObj;
+              newSlots[index][index2] = {team: teamObj};
             }
           });
         });
