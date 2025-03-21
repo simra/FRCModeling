@@ -24,6 +24,18 @@
     - backend\  - python flask app - see deploy.sh for build/deploy steps
     - frontend\ - react front-end
 
+## Installation
+1. Install node.js on your machine from https://nodejs.org/en/download/
+2. Open a command prompt `cd current\frontend` 
+3. run `npm install` and then `npm run build`
+4. Delete `backend\static\build` if it exists
+5. Copy the contents of `build` to `backend\static\build`
+6. `cd ..\backend`
+7. `pip install -r requirements.txt`
+8. `python -m flask run`
+
+
+
 
 ## Model Code
 
