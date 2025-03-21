@@ -73,7 +73,7 @@ function AllianceComponent() {
     }, {});
     console.log(payload);
     // POST alliances to /model/district_model_event_match_type/bracket
-    let baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+    let baseUrl = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000').replace(/\/+$/, '');
     let url = `${baseUrl}/model/${district}_${modelEvent}_${matchType}/bracket/${bracketMethod}`;
     // POST the alliances to the url using fetch:
     fetch(url, {
@@ -98,7 +98,7 @@ function AllianceComponent() {
     var blue = slots[a2].map(slot => slot.team ? slot.team.team : '').join(','); 
 
     // POST alliances to /model/district_model_event_match_type/bracket
-    let baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+    let baseUrl = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000').replace(/\/+$/, '');
     // /model/<model_key>/predict/<red>/<blue>
     let url = `${baseUrl}/model/${district}_${modelEvent}_${matchType}/predict/${red}/${blue}/${modelMethod}`;
     // POST the alliances to the url using fetch:
