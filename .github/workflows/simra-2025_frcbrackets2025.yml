@@ -28,7 +28,11 @@ jobs:
         run: |
             cd current/frontend
             npm install
-    
+      - name: create env file
+        run: |
+            cd current/frontend
+            touch .env
+            echo REACT_APP_API_BASE_URL= >> .env
       - name: Build frontend
         run: |
             cd current/frontend

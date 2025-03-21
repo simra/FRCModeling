@@ -12,6 +12,7 @@
     "@types/react-dom": "^18.2.22",
     "chart.js": "^4.4.2",
     "d3-scale": "^4.0.2",
+    "dotenv": "^16.4.7",
     "mathjs": "^12.4.1",
     "moment-timezone": "^0.5.47",
     "react": "^18.2.0",
