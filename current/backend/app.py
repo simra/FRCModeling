@@ -33,7 +33,7 @@ if not os.path.exists(DATA_FOLDER):
     os.makedirs(DATA_FOLDER)
 
 models = {}
-tba = TBA(year=2025, district='pnw')
+tba = TBA(year=2025, district='pnw', _request_timeout=30)
 all_matches = tba.matches
 last_fetch = os.stat(tba.matches_file).st_mtime if os.path.exists(tba.matches_file) else 0
 logging.info('Last fetch: %s', last_fetch)
@@ -193,9 +193,9 @@ def get_event_teams(model_key, event_key):
     event_key: string, the key for the event to get the teams for
     returns: a json object with the list of teams in the event
     '''
-    logging.info('Getting teams for model %s event %s', model_key, event_key)
+    logging.info('get_event_teams %s event %s', model_key, event_key)
     opr = get_model(model_key)    
-        
+    logging.info('Fetching teams for event %s', event_key)    
     teams = tba.fetch_event_teams(event_key)
     
     EMPTY_OPR = {'opr': {'mu': 0, 'sigma': 0}, 'dpr': {'mu': 0, 'sigma': 0}, 'tpr': {'mu': 0, 'sigma': 0}}   
@@ -220,7 +220,7 @@ def get_event_alliances(model_key, event_key):
     event_key: string, the key for the event to get the teams for
     returns: a json object with the list of teams in the event
     '''
-    logging.info('Getting teams for model %s event %s', model_key, event_key)
+    logging.info('Getting event alliances for model %s event %s', model_key, event_key)
     opr = get_model(model_key)    
         
     alliances = tba.fetch_event_alliances(event_key)

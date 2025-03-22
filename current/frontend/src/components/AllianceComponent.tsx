@@ -297,7 +297,11 @@ function AllianceComponent() {
           <div className='overall-value'>{overall && ('A'+id) in overall ? overall['A'+id]/10 : ''}</div>
           </div>))}
           <div className='form-group-bracket'>
-          <label>Method:</label><Select options={modeloptions} onChange={(e) => setBracketMethod(e?.value || '')} className='input-field'></Select>
+          <label>Method:</label>
+          <Select options={modeloptions} 
+            onChange={(e) => setBracketMethod(e?.value || '')} 
+            value={modeloptions.find(option => option.value === bracketMethod)}
+            className='input-field'></Select>
           </div>
           <button onClick={updateBrackets}>Run Brackets</button> <button onClick={clearBrackets}>Clear Brackets</button>
         </div>
@@ -310,7 +314,11 @@ function AllianceComponent() {
                   <label> Blue:</label><input type="text" value={alliance2} onChange={e => setAlliance2(e.target.value) } className="input-field"></input>
                 </div>
                 <div className='form-group'>                  
-                  <label>Method:</label><Select options={modeloptions} onChange={(e) => setModelMethod(e?.value || '')} className='input-field'></Select>
+                  <label>Method:</label>
+                  <Select options={modeloptions} 
+                    onChange={(e) => setModelMethod(e?.value || '')} 
+                    value={modeloptions.find(option => option.value === modelMethod)} // Initialize to bracketMethod
+                    className='input-field'></Select>
                 </div>
                 <button onClick={predictMatch}>Run Match</button>
                 <hr></hr>

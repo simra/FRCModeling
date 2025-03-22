@@ -8,10 +8,11 @@ from swagger_client.rest import ApiException
 logging.basicConfig(level=logging.INFO)
 
 class TBA:
-    def __init__(self, year=2024, district = 'all'):
+    def __init__(self, year=2024, district = 'all', _request_timeout=None):
         self.matches = None
         self.year = year
         self.district = district
+        self._request_timeout = _request_timeout
         self.DATA_FOLDER = os.environ.get('DATA_FOLDER', './data')
         if not os.path.exists(self.DATA_FOLDER):
             os.makedirs(self.DATA_FOLDER)
@@ -63,7 +64,8 @@ class TBA:
                     logging.error('Failed to load prior matches. %s', e)
                     result = {}
         try:
-            events = api_instance.get_events_by_year(self.year, if_modified_since=if_modified_since)
+            events = api_instance.get_events_by_year(self.year, if_modified_since=if_modified_since,
+                                                     _request_timeout=self._request_timeout)
             if self.district != 'all':
                 events = [e for e in events if e.district and e.district.abbreviation==self.district]
             if events_filter is not None:
@@ -79,10 +81,12 @@ class TBA:
                 result['event_teams'] = {}
             for e in events:
                 logging.info('Fetching event %s', e.key)
-                matches = api_instance.get_event_matches(e.key, if_modified_since=if_modified_since)
+                matches = api_instance.get_event_matches(e.key, if_modified_since=if_modified_since,
+                                                         _request_timeout=self._request_timeout)
                 result['matches'][e.key]=matches
                 # print(matches)
-                teams = api_instance.get_event_teams(e.key, if_modified_since=if_modified_since)
+                teams = api_instance.get_event_teams(e.key, if_modified_since=if_modified_since,
+                                                     _request_timeout=self._request_timeout)
                 result['event_teams'][e.key]=teams
             
         except ApiException as e:
@@ -100,20 +104,25 @@ class TBA:
         return result
 
     def fetch_events(self, team_key='frc492', if_modified_since=''):
-        events = self.api_instance.get_team_events_by_year(team_key, self.year, if_modified_since=if_modified_since)
+        events = self.api_instance.get_team_events_by_year(team_key, self.year, 
+                                                           if_modified_since=if_modified_since,
+                                                           _request_timeout=self._request_timeout)
         for e in events:
             print(f'{e.event_code}\t{e.name}\t{e.start_date}')
         return events
 
     def fetch_event_rankings(self, event_key):
-        rankings = self.api_instance.get_event_rankings(event_key)
+        rankings = self.api_instance.get_event_rankings(event_key,
+                                                        _request_timeout=self._request_timeout)
         return rankings
 
     def fetch_event_teams(self, event_key):
-        return self.api_instance.get_event_teams(event_key)
+        return self.api_instance.get_event_teams(event_key,
+                                                 _request_timeout=self._request_timeout)
 
     def fetch_event_alliances(self, event_key):
-        return self.api_instance.get_event_alliances(event_key)
+        return self.api_instance.get_event_alliances(event_key,
+                                                     _request_timeout=self._request_timeout)
 
     def fetch_matches(self, team_key = 'frc492', if_modified_since=''):
         """
@@ -121,7 +130,9 @@ class TBA:
         """
         result = []
         try:
-            events = self.api_instance.get_team_events_by_year(team_key, self.year, if_modified_since=if_modified_since)
+            events = self.api_instance.get_team_events_by_year(team_key, self.year, 
+                                                               if_modified_since=if_modified_since,
+                                                               _request_timeout=self._request_timeout)
             for e in events:
                 print('Fetching: '+e.short_name)
                 matches = self.api_instance.get_event_matches(e.key)
@@ -147,7 +158,7 @@ class TBA:
         result = []
         while True:
             logging.info('page ' % pg)
-            teams = list_api.get_teams_by_year(self.year, pg)
+            teams = list_api.get_teams_by_year(self.year, pg, _request_timeout=self._request_timeout)
             if len(teams)==0:
                 break
             result+=teams
