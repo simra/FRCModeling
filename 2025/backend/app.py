@@ -2,7 +2,6 @@ from collections import Counter
 import logging
 import pickle
 import os
-import re
 from time import strftime, gmtime
 from dotenv import load_dotenv
 import numpy as np
@@ -33,44 +32,11 @@ logging.info('Using data folder: %s', DATA_FOLDER)
 if not os.path.exists(DATA_FOLDER):
     os.makedirs(DATA_FOLDER)
 
-# Per-(year, district) TBA instance cache and last-fetch timestamps.
-# Keyed as (year, district) tuples so each combination gets its own cached fetch.
-_tba_cache: dict = {}
-_fetch_times: dict = {}
 models = {}
-
-DEFAULT_YEAR = int(os.getenv('DEFAULT_YEAR', 2026))
-EVENT_KEY_RE = re.compile(r'^(\d{4})[a-z]{2}')
-
-
-def get_tba(year: int, district: str = 'all') -> TBA:
-    """Return a cached TBA instance for the given year+district, creating one if needed."""
-    key = (year, district)
-    if key not in _tba_cache:
-        _tba_cache[key] = TBA(year=year, district=district, _request_timeout=30)
-    return _tba_cache[key]
-
-
-def ensure_fresh(year: int, district: str = 'all'):
-    """Fetch/refresh match data for a year+district if not yet loaded or older than 1 hour."""
-    tba = get_tba(year, district)
-    key = (year, district)
-    last = _fetch_times.get(key, 0)
-    if tba.matches is None or time.time() - last > 3600:
-        logging.info('Fetching matches for year %d district %s', year, district)
-        tba.fetch_all_matches()
-        _fetch_times[key] = os.stat(tba.matches_file).st_mtime
-
-
-def year_from_event(event: str) -> int:
-    """Extract the year from an event key like '2026wasno', or return DEFAULT_YEAR."""
-    if event == 'all':
-        return DEFAULT_YEAR
-    m = EVENT_KEY_RE.match(event)
-    if not m:
-        raise ValueError(
-            f'Invalid event key: {event!r}. Expected format <year><state><name>, eg 2026wasno')
-    return int(m.group(1))
+tba = TBA(year=2025, district='pnw', _request_timeout=30)
+all_matches = tba.matches
+last_fetch = os.stat(tba.matches_file).st_mtime if os.path.exists(tba.matches_file) else 0
+logging.info('Last fetch: %s', last_fetch)
 
 app = Flask(__name__, static_folder='static/build')
 CORS(app)
@@ -88,60 +54,63 @@ def serve(path):
 def create_model(district, event, match_type, force_recompute=False):
     '''
     district: string, the district to filter by. eg 'pnw', 'all' for all districts
-    event: string, the event to filter by. eg. '2026wasno', 'all' for all events
+    event: string, the event to filter by. eg. '2024wasno', 'all' for all events
     match_type: string, the match type to filter by. eg. 'qm', 'all' for all match types
     force_recompute: bool, if True, recompute the model even if it already exists
     '''
-    logging.info('Create model: %s %s %s force=%s', district, event, match_type, force_recompute)
-    # Derive year first so it can be encoded in the filename, avoiding cross-year collisions.
-    year = year_from_event(event)
-    model_key = f'{district}_{event}_{match_type}'
-    model_fn = f'{DATA_FOLDER}/model_{year}_{model_key}.pkl'
+    logging.info(f'Create model: {district} {event} {match_type} {force_recompute}')
+    model_key=f'{district}_{event}_{match_type}'
+    model_fn = f'{DATA_FOLDER}/model_{model_key}.pkl'
 
-    # Fast path: model already on disk and caller did not request a rebuild.
-    # Use the explicit /refresh endpoint to invalidate stale models.
-    if os.path.exists(model_fn) and not force_recompute:
-        logging.info('Loading cached model %s', model_key)
-        with open(model_fn, 'rb') as f:
-            models[model_key] = pickle.load(f)
-        return
+    global all_matches
+    global last_fetch
+    logging.info(f'Last fetch: {last_fetch} Time delta: {time.time() - last_fetch}')
+    if all_matches is None or time.time() - last_fetch > 3600:
+        logging.info('Fetching all matches')
+        tba.fetch_all_matches()
+        all_matches = tba.matches 
+        last_fetch = os.stat(tba.matches_file).st_mtime     
 
-    ensure_fresh(year, district)
-    all_matches = get_tba(year, district).matches
+    #if all_matches is None:
+    #    filename = f'{DATA_FOLDER}/matches_2024.pkl'        
+    #    with open(filename, 'rb') as f:
+    #        all_matches = pickle.load(f)
+    #        # stat the matches file to get its last modified time and set it on all_matches
+    #        all_matches['last_modified'] = os.stat(filename).st_mtime
+    
+    if not os.path.exists(model_fn) or force_recompute or all_matches['last_modified'] > os.stat(model_fn).st_mtime:
+        logging.info('Creating model %s', model_key)
+        selected_district = [m.key for m in all_matches['events']] if district == 'all' else \
+            [m.key for m in all_matches['events'] if m.district and m.district.abbreviation==district]
+        
+        print(f'{len(all_matches["matches"])} events')
 
-    logging.info('Building model %s from %d events', model_key, len(all_matches['matches']))
-    selected_district = [m.key for m in all_matches['events']] if district == 'all' else \
-        [m.key for m in all_matches['events'] if m.district and m.district.abbreviation == district]
+        data = [m for k in all_matches['matches'] for m in all_matches['matches'][k]]
+        data = [m for m in data if m.winning_alliance!='' and m.score_breakdown is not None]
+        print(f'Found {len(data)} matches')
 
-    data = [m for k in all_matches['matches'] for m in all_matches['matches'][k]]
-    data = [m for m in data if m.winning_alliance != '' and m.score_breakdown is not None]
-    logging.info('Found %d completed matches', len(data))
+        def in_scope(m):
+            return ((event == 'all' and m.event_key in selected_district) \
+                or (m.event_key == event)) \
+                    and (match_type == 'all' or m.comp_level == match_type)
 
-    # 'all' means all events; '2025all' (year-prefixed) also means all events for that year
-    all_events = (event == 'all' or bool(re.match(r'^\d{4}all$', event)))
+        selected_matches = list(filter(in_scope, data))
 
-    def in_scope(m):
-        return ((all_events and m.event_key in selected_district)
-                or (not all_events and m.event_key == event)) \
-            and (match_type == 'all' or m.comp_level == match_type)
+        teams = set()
+        for m in selected_matches:
+            for t in m.alliances.red.team_keys:
+                teams.add(t)
+            for t in m.alliances.blue.team_keys:
+                teams.add(t)
 
-    selected_matches = list(filter(in_scope, data))
-
-    teams = set()
-    for m in selected_matches:
-        for t in m.alliances.red.team_keys:
-            teams.add(t)
-        for t in m.alliances.blue.team_keys:
-            teams.add(t)
-
-    teams = list(sorted(teams))
-    logging.debug('Teams: %d', len(teams))
-
-    opr = OPR(selected_matches, teams)
-    opr.data_timestamp = all_matches['last_modified']
-    logging.debug('Saving %s', model_fn)
-    with open(model_fn, 'wb') as f:
-        pickle.dump(opr, f)
+        teams = list(sorted(teams))
+        logging.debug('Teams: %s', len(teams))
+        
+        opr = OPR(selected_matches, teams)
+        opr.data_timestamp = all_matches['last_modified']
+        logging.debug('Saving %s', model_fn)
+        with open(model_fn, 'wb') as f:
+            pickle.dump(opr, f)
 
     with open(model_fn, 'rb') as f:
         logging.debug('Loading %s', model_fn)
@@ -173,18 +142,13 @@ def refresh_model(model_key):
     returns: a json object with the model info
     '''
     logging.info('Refreshing model %s', model_key)
+    global all_matches
+    global models
     # TODO this must run async: https://stackoverflow.com/questions/14384739/how-can-i-add-a-background-thread-to-flask
-    (district, event, match_type) = model_key.split('_')
-    year = year_from_event(event)
-    tba = get_tba(year, district)
     tba.fetch_all_matches()
-    _fetch_times[(year, district)] = os.stat(tba.matches_file).st_mtime
-    # Delete the model file and evict from memory so it is fully rebuilt on the next request
-    model_fn = f'{DATA_FOLDER}/model_{year}_{model_key}.pkl'
-    if os.path.exists(model_fn):
-        os.remove(model_fn)
-    models.pop(model_key, None)
-    return jsonify({'year': year, 'all_matches': len(tba.matches['matches'])})
+    all_matches = tba.matches
+    models = {}
+    return jsonify({'all_matches': len(all_matches['matches'])})
 
 # pass in the team id and get back the stats for that team.
 @app.route('/model/<model_key>/team/<team_id>')
@@ -230,10 +194,9 @@ def get_event_teams(model_key, event_key):
     returns: a json object with the list of teams in the event
     '''
     logging.info('get_event_teams %s event %s', model_key, event_key)
-    opr = get_model(model_key)
-    logging.info('Fetching teams for event %s', event_key)
-    (district, *_) = model_key.split('_')
-    teams = get_tba(year_from_event(event_key), district).fetch_event_teams(event_key)
+    opr = get_model(model_key)    
+    logging.info('Fetching teams for event %s', event_key)    
+    teams = tba.fetch_event_teams(event_key)
     
     EMPTY_OPR = {'opr': {'mu': 0, 'sigma': 0}, 'dpr': {'mu': 0, 'sigma': 0}, 'tpr': {'mu': 0, 'sigma': 0}}   
 
@@ -258,10 +221,9 @@ def get_event_alliances(model_key, event_key):
     returns: a json object with the list of teams in the event
     '''
     logging.info('Getting event alliances for model %s event %s', model_key, event_key)
-    opr = get_model(model_key)
-
-    (district, *_) = model_key.split('_')
-    alliances = get_tba(year_from_event(event_key), district).fetch_event_alliances(event_key)
+    opr = get_model(model_key)    
+        
+    alliances = tba.fetch_event_alliances(event_key)
     logging.info('Found %s alliances', len(alliances))
     logging.info('Alliances: %s', alliances)
     result = [

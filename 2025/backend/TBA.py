@@ -32,11 +32,12 @@ class TBA:
         #team_key = 'frc492' # str | TBA Team Key, eg `frc254`
         #if_modified_since = 'if_modified_since_example' # str | Value of the `Last-Modified` header in the most recently cached response by the client. (optional)
         
-        if os.path.exists(self.matches_file):
-            with open(self.matches_file, 'rb') as f:
-                self.matches = pickle.load(f)
-                self.matches['last_modified'] = os.stat(self.matches_file).st_mtime
-        # If no cache file exists, self.matches stays None until fetch_all_matches() is called
+        if not os.path.exists(self.matches_file):
+            self.fetch_all_matches()
+
+        with open(self.matches_file, 'rb') as f:
+            self.matches = pickle.load(f)
+            self.matches['last_modified'] = os.stat(self.matches_file).st_mtime
 
 
     def fetch_all_matches(self, eventsToPull="", reset=False, if_modified_since=''):

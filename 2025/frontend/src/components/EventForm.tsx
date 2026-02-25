@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Team } from '../types/TeamTypes'; 
 import moment from 'moment-timezone';
-import { effectiveModelEvent } from '../utils';
 
 class EventFormProps {
   onTeamsUpdate: (district: string, model_event: string, matchType: string, teams: Team[]) => void;
@@ -35,7 +34,7 @@ function EventForm({ onTeamsUpdate, onPropUpdate, district, modelEvent, matchTyp
   const handleSubmit = (event: React.FormEvent): void => {
     event.preventDefault();
     let baseUrl = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000').replace(/\/+$/, '');
-    let url = `${baseUrl}/model/${district}_${effectiveModelEvent(modelEvent, predictionEvent)}_${matchType}/event/${predictionEvent}/teams`;
+    let url = `${baseUrl}/model/${district}_${modelEvent}_${matchType}/event/${predictionEvent}/teams`;
     console.log(url);
     fetch(url)
       .then(response => response.json())
@@ -50,7 +49,7 @@ function EventForm({ onTeamsUpdate, onPropUpdate, district, modelEvent, matchTyp
         });
         onTeamsUpdate(district, modelEvent, matchType, teams);
       });
-    let ts_url = `${baseUrl}/model/${district}_${effectiveModelEvent(modelEvent, predictionEvent)}_${matchType}`;
+    let ts_url = `${baseUrl}/model/${district}_${modelEvent}_${matchType}`;
     fetch(ts_url)
       .then(response => response.json())
       .then(data => {

@@ -8,7 +8,6 @@ import { TBAAlliance }  from '../types/TBAAlliance';
 import StrictModeDroppable from './StrictModeDroppable';
 import GaussianPlot from './GaussianPlot';
 import RatingsView from './RatingsView';
-import { effectiveModelEvent } from '../utils';
 
 function AllianceComponent() {
   const [district, setDistrict] = useState(localStorage.getItem('district') || '');
@@ -57,7 +56,6 @@ function AllianceComponent() {
     setDistrict(district);
     setModelEvent(model_event);
     setMatchType(match_type);
-    setOverall({});
   };
 
   const handlePropUpdate = (district: string, model_event: string, match_type: string, predictionEvent: string) => {
@@ -80,7 +78,7 @@ function AllianceComponent() {
     }, {});
     // POST alliances to /model/district_model_event_match_type/bracket
     let baseUrl = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000').replace(/\/+$/, '');
-    let url = `${baseUrl}/model/${district}_${effectiveModelEvent(modelEvent, predictionEvent)}_${matchType}/bracket/${bracketMethod}`;
+    let url = `${baseUrl}/model/${district}_${modelEvent}_${matchType}/bracket/${bracketMethod}`;
     // POST the alliances to the url using fetch:
     fetch(url, {
       method: 'POST',
@@ -105,7 +103,7 @@ function AllianceComponent() {
     // POST alliances to /model/district_model_event_match_type/bracket
     let baseUrl = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000').replace(/\/+$/, '');
     // /model/<model_key>/predict/<red>/<blue>
-    let url = `${baseUrl}/model/${district}_${effectiveModelEvent(modelEvent, predictionEvent)}_${matchType}/predict/${red}/${blue}/${modelMethod}`;
+    let url = `${baseUrl}/model/${district}_${modelEvent}_${matchType}/predict/${red}/${blue}/${modelMethod}`;
     // POST the alliances to the url using fetch:
     fetch(url)
       .then(response => response.json())
@@ -183,7 +181,7 @@ function AllianceComponent() {
   const popFromEvent = () => {
     // fetch the alliances from /model/<model_key>/event/<event_key>/alliances
     let baseUrl = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000').replace(/\/+$/, '');
-    let url = `${baseUrl}/model/${district}_${effectiveModelEvent(modelEvent, predictionEvent)}_${matchType}/event/${predictionEvent}/alliances`;
+    let url = `${baseUrl}/model/${district}_${modelEvent}_${matchType}/event/${predictionEvent}/alliances`;
     fetch(url)
       .then(response => response.json())
       .then((data : TBAAlliance[])=> {
