@@ -41,62 +41,109 @@ class TBA:
 
     def fetch_all_matches(self, eventsToPull="", reset=False, if_modified_since=''):
         """
-        Fetch all matches associated with a requested year, 
+        Incrementally fetch all matches associated with a requested year,
         filtered to eventsToPull, or all events if it's empty.
-        Set reset=True to force re-fetching everything.
+        Uses per-event Last-Modified headers so only changed events are re-fetched.
+        Set reset=True to force re-fetching everything from TBA.
         """
         logging.info(f'Fetching matches for {self.year}, events: {eventsToPull}')
         api_instance = self.api_instance
-        result = {}
         events_filter = None
-        if eventsToPull!="":
-            events_filter=eventsToPull.split(',')
+        if eventsToPull != "":
+            events_filter = eventsToPull.split(',')
 
         outfile = self.matches_file
-        if os.path.exists(outfile):
+
+        # --- Load existing cache, preserving matches/teams/per-event timestamps ---
+        result = {}
+        if os.path.exists(outfile) and not reset:
             with open(outfile, 'rb') as inresult:
                 try:
-                    result=pickle.load(inresult)
-                    if 'headers' in result and 'Last-Modified' in result['headers'] and not reset:
+                    result = pickle.load(inresult)
+                    if 'headers' in result and 'Last-Modified' in result['headers']:
                         if_modified_since = result['headers']['Last-Modified']
                 except Exception as e:
                     logging.error('Failed to load prior matches. %s', e)
                     result = {}
+
+        # Ensure required dicts are present (handles old/empty cache files)
+        if 'matches' not in result:
+            result['matches'] = {}
+        if 'event_teams' not in result:
+            result['event_teams'] = {}
+        # Per-event Last-Modified timestamps for incremental per-event fetches
+        if 'event_last_modified' not in result:
+            result['event_last_modified'] = {}
+
+        # --- Fetch events list (conditional GET) ---
+        global_lms = '' if reset else if_modified_since
         try:
-            events = api_instance.get_events_by_year(self.year, if_modified_since=if_modified_since,
-                                                     _request_timeout=self._request_timeout)
+            events = api_instance.get_events_by_year(
+                self.year,
+                if_modified_since=global_lms,
+                _request_timeout=self._request_timeout)
             if self.district != 'all':
-                events = [e for e in events if e.district and e.district.abbreviation==self.district]
+                events = [e for e in events if e.district and e.district.abbreviation == self.district]
             if events_filter is not None:
                 events = [e for e in events if e.key in events_filter]
-
-            # TODO: this overrides result with a new dict, should be merged
-            result = {
-                'headers': api_instance.api_client.last_response.getheaders(),
-                'events': events
-            }
-            if 'matches' not in result:
-                result['matches'] = {}
-                result['event_teams'] = {}
-            for e in events:
-                logging.info('Fetching event %s', e.key)
-                matches = api_instance.get_event_matches(e.key, if_modified_since=if_modified_since,
-                                                         _request_timeout=self._request_timeout)
-                result['matches'][e.key]=matches
-                # print(matches)
-                teams = api_instance.get_event_teams(e.key, if_modified_since=if_modified_since,
-                                                     _request_timeout=self._request_timeout)
-                result['event_teams'][e.key]=teams
-            
+            result['events'] = events
+            result['headers'] = api_instance.api_client.last_response.getheaders()
+            logging.info('Events list refreshed: %d events', len(events))
         except ApiException as e:
-            logging.error("Exception when calling EventApi->get_team_events: %s\n", e)
-        
+            if e.status == 304:
+                logging.info('Events list not modified (304); using cached events')
+                # Apply filters to the cached event list in case they changed
+                cached_events = result.get('events', [])
+                if self.district != 'all':
+                    cached_events = [ev for ev in cached_events
+                                     if ev.district and ev.district.abbreviation == self.district]
+                if events_filter is not None:
+                    cached_events = [ev for ev in cached_events if ev.key in events_filter]
+                result['events'] = cached_events
+            else:
+                logging.error("Exception when calling EventApi->get_events_by_year: %s\n", e)
+                raise e
+
+        # --- Incrementally fetch per-event matches and teams ---
+        for ev in result.get('events', []):
+            # Use the per-event Last-Modified if available, else fall back to global
+            ev_lms = '' if reset else result['event_last_modified'].get(ev.key, global_lms)
+
+            try:
+                matches = api_instance.get_event_matches(
+                    ev.key,
+                    if_modified_since=ev_lms,
+                    _request_timeout=self._request_timeout)
+                result['matches'][ev.key] = matches
+                lm = api_instance.api_client.last_response.getheader('Last-Modified', '')
+                if lm:
+                    result['event_last_modified'][ev.key] = lm
+                logging.info('Fetched %d matches for event %s', len(matches), ev.key)
+            except ApiException as e:
+                if e.status == 304:
+                    logging.info('Matches for event %s not modified (304); keeping cache', ev.key)
+                else:
+                    logging.error("Exception fetching matches for event %s: %s", ev.key, e)
+
+            try:
+                teams = api_instance.get_event_teams(
+                    ev.key,
+                    if_modified_since=ev_lms,
+                    _request_timeout=self._request_timeout)
+                result['event_teams'][ev.key] = teams
+            except ApiException as e:
+                if e.status == 304:
+                    logging.info('Teams for event %s not modified (304); keeping cache', ev.key)
+                else:
+                    logging.error("Exception fetching teams for event %s: %s", ev.key, e)
+
+        # --- Persist to disk ---
         if 'events' in result:
             if os.path.exists(outfile):
-                # make a backup copy, overwrite if it already exists            
-                os.replace(outfile, outfile+'.bak')
-            with open(outfile,'wb') as outmatches:
-                pickle.dump(result,outmatches)
+                # make a backup copy, overwrite if it already exists
+                os.replace(outfile, outfile + '.bak')
+            with open(outfile, 'wb') as outmatches:
+                pickle.dump(result, outmatches)
 
         result['last_modified'] = os.stat(outfile).st_mtime
         self.matches = result
