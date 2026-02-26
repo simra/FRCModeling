@@ -3,6 +3,7 @@ import logging
 import pickle
 import os
 import re
+import threading
 from time import strftime, gmtime
 from dotenv import load_dotenv
 import numpy as np
@@ -38,6 +39,8 @@ if not os.path.exists(DATA_FOLDER):
 _tba_cache: dict = {}
 _fetch_times: dict = {}
 models = {}
+_model_locks: dict = {}
+_model_locks_lock = threading.Lock()
 
 DEFAULT_YEAR = int(os.getenv('DEFAULT_YEAR', 2026))
 EVENT_KEY_RE = re.compile(r'^(\d{4})[a-z]{2}')
@@ -148,8 +151,18 @@ def create_model(district, event, match_type, force_recompute=False):
         models[model_key] = pickle.load(f)
 
 def get_model(model_key):
-    if model_key not in models:
-        create_model(*model_key.split('_'))
+    # Fast path: model already built.
+    if model_key in models:
+        return models[model_key]
+    # Acquire (or create) a per-key lock so only one thread builds each model.
+    with _model_locks_lock:
+        if model_key not in _model_locks:
+            _model_locks[model_key] = threading.Lock()
+        lock = _model_locks[model_key]
+    with lock:
+        # Re-check after acquiring the lock — another thread may have built it.
+        if model_key not in models:
+            create_model(*model_key.split('_'))
     assert model_key in models
     return models[model_key]
 
