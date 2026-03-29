@@ -175,9 +175,13 @@ def get_model_info(model_key):
     logging.info('Getting model info for %s', model_key)
     opr = get_model(model_key)
     (district, events, match_type) = model_key.split('_')
-    timestamp = strftime('%Y-%m-%d %H:%M:%S', gmtime(opr.data_timestamp))
+    year = year_from_event(events)
+    match_timestamp = strftime('%Y-%m-%d %H:%M:%S', gmtime(opr.data_timestamp))
+    model_fn = f'{DATA_FOLDER}/model_{year}_{model_key}.pkl'
+    model_built = strftime('%Y-%m-%d %H:%M:%S', gmtime(os.stat(model_fn).st_mtime)) if os.path.exists(model_fn) else None
     return jsonify({
-        'district': district, 'event': events, 'match_type': match_type, 'teams': len(opr.opr_lookup), 'last_modified': timestamp})
+        'district': district, 'event': events, 'match_type': match_type, 'teams': len(opr.opr_lookup),
+        'last_modified': match_timestamp, 'model_built': model_built})
 
 @app.route('/model/<model_key>/refresh')
 def refresh_model(model_key):

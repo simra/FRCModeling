@@ -26,16 +26,41 @@ class EventFormProps {
 
 function EventForm({ onTeamsUpdate, onPropUpdate, district, modelEvent, matchType, predictionEvent }: EventFormProps) {
   //const [predictionEvent, setPredictionEvent] = useState(localStorage.getItem('predictionEvent') || '');
+  const [matchTimestamp, setMatchTimestamp] = useState('');
   const [modelTimestamp, setModelTimestamp] = useState(localStorage.getItem('modelTimestamp') || '');
+  const [refreshing, setRefreshing] = useState(false);
 
   /*useEffect(() => {        
     localStorage.setItem('predictionEvent', predictionEvent);
   }, [district, modelEvent, matchType, predictionEvent]);*/
 
+  const modelKey = `${district}_${effectiveModelEvent(modelEvent, predictionEvent)}_${matchType}`;
+  const baseUrl = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000').replace(/\/+$/, '');
+
+  const fetchModelTimestamp = (): void => {
+    fetch(`${baseUrl}/model/${modelKey}`)
+      .then(response => response.json())
+      .then(data => {
+        setMatchTimestamp(data['last_modified'] || '');
+        setModelTimestamp(data['model_built'] || '');
+      });
+  };
+
+  const handleRefresh = (): void => {
+    setRefreshing(true);
+    fetch(`${baseUrl}/model/${modelKey}/refresh`)
+      .then(response => response.json())
+      .then(() => {
+        fetchModelTimestamp();
+      })
+      .finally(() => {
+        setRefreshing(false);
+      });
+  };
+
   const handleSubmit = (event: React.FormEvent): void => {
     event.preventDefault();
-    let baseUrl = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000').replace(/\/+$/, '');
-    let url = `${baseUrl}/model/${district}_${effectiveModelEvent(modelEvent, predictionEvent)}_${matchType}/event/${predictionEvent}/teams`;
+    let url = `${baseUrl}/model/${modelKey}/event/${predictionEvent}/teams`;
     console.log(url);
     fetch(url)
       .then(response => response.json())
@@ -50,12 +75,7 @@ function EventForm({ onTeamsUpdate, onPropUpdate, district, modelEvent, matchTyp
         });
         onTeamsUpdate(district, modelEvent, matchType, teams);
       });
-    let ts_url = `${baseUrl}/model/${district}_${effectiveModelEvent(modelEvent, predictionEvent)}_${matchType}`;
-    fetch(ts_url)
-      .then(response => response.json())
-      .then(data => {
-        setModelTimestamp(data['last_modified']);
-      });
+    fetchModelTimestamp();
   };
 
   const formatTimestamp = (timestamp: string) => {
@@ -81,6 +101,10 @@ function EventForm({ onTeamsUpdate, onPropUpdate, district, modelEvent, matchTyp
         <input type="text" value={predictionEvent} onChange={e => onPropUpdate(district, modelEvent, matchType, e.target.value)} className="input-field" /><br />
       </div>
       <button type="submit">Submit</button>
+      <button type="button" onClick={handleRefresh} disabled={refreshing}>
+        {refreshing ? 'Refreshing…' : 'Refresh Data'}
+      </button>
+      <div><i>Last match update: {matchTimestamp ? formatTimestamp(matchTimestamp) : ""}</i></div>
       <div><i>Last model update: {modelTimestamp ? formatTimestamp(modelTimestamp) : ""}</i></div>
     </form>
   );
