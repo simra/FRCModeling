@@ -17,8 +17,9 @@ function AllianceComponent() {
   const [predictionEvent, setPredictionEvent] = useState(localStorage.getItem('predictionEvent') || '');
   //const [density, setDensity] = useState<{[key: number]: {[key: string]: number} }>({});
   const [overall, setOverall] = useState<{[key: string]: number}>({});
-  const [alliance1, setAlliance1] = useState('');
-  const [alliance2, setAlliance2] = useState('');
+  const allianceOptions = Array.from({ length: 8 }, (_, i) => ({ value: `A${i + 1}`, label: `A${i + 1}` }));
+  const [alliance1, setAlliance1] = useState('A1');
+  const [alliance2, setAlliance2] = useState('A2');
   const [modelMethod, setModelMethod] = useState('opr');
   const [bracketMethod, setBracketMethod] = useState('opr');
   const [spread, setSpread] = useState<number|null>(null);
@@ -97,23 +98,25 @@ function AllianceComponent() {
   }
 
   const predictMatch = () => {
-    var a1 = Number(alliance1[1])-1;
-    var a2 = Number(alliance2[1])-1;
+    var a1 = Number(alliance1.slice(1))-1;
+    var a2 = Number(alliance2.slice(1))-1;
+    if (isNaN(a1) || isNaN(a2) || !slots[a1] || !slots[a2]) {
+      console.error('Invalid alliance selection', alliance1, alliance2);
+      return;
+    }
     var red = slots[a1].map(slot => slot.team ? slot.team.team : '').join(',');
     var blue = slots[a2].map(slot => slot.team ? slot.team.team : '').join(','); 
 
-    // POST alliances to /model/district_model_event_match_type/bracket
     let baseUrl = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000').replace(/\/+$/, '');
-    // /model/<model_key>/predict/<red>/<blue>
     let url = `${baseUrl}/model/${district}_${effectiveModelEvent(modelEvent, predictionEvent)}_${matchType}/predict/${red}/${blue}/${modelMethod}`;
-    // POST the alliances to the url using fetch:
     fetch(url)
       .then(response => response.json())
       .then(data => {
         setSpread(data['spread']);
         setSigma(data['sigma']);
         setPRed(data['pRed']);        
-      });
+      })
+      .catch(err => console.error('Predict match failed:', err));
   }
 
   const handleDragEnd = (result: any) => {
@@ -310,10 +313,16 @@ function AllianceComponent() {
         <div className='bracket-list'>
                 <h2>Single Match</h2>
                 <div className='form-group'>
-                  <label>Red:</label><input type="text" value={alliance1} onChange={e => setAlliance1(e.target.value) } className="input-field"></input>
+                  <label>Red:</label><Select options={allianceOptions}
+                    onChange={(e) => setAlliance1(e?.value || '')}
+                    value={allianceOptions.find(o => o.value === alliance1)}
+                    className='input-field' />
                 </div>
                 <div className='form-group'>
-                  <label> Blue:</label><input type="text" value={alliance2} onChange={e => setAlliance2(e.target.value) } className="input-field"></input>
+                  <label> Blue:</label><Select options={allianceOptions}
+                    onChange={(e) => setAlliance2(e?.value || '')}
+                    value={allianceOptions.find(o => o.value === alliance2)}
+                    className='input-field' />
                 </div>
                 <div className='form-group'>                  
                   <label>Method:</label>
